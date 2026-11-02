@@ -1,0 +1,605 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0b0f1a">
+<title>Slurp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0f1a; --panel:#141a2b; --panel2:#1c2440; --line:#2a3458;
+  --ink:#f2f5ff; --muted:#8a93b0; --accent:#29e3ff; --accent2:#ff3d7f;
+  --good:#3dff9a; --warn:#ffd23d; --water:#5fd4ff; --water2:#1f8fd6;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+input{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+canvas,#play{touch-action:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;overscroll-behavior:none}
+body{display:flex;justify-content:center}
+#app{width:100%;max-width:480px;height:100dvh;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.screen.on{display:flex}
+h1,h2,.big{font-family:"Russo One",Inter,sans-serif;letter-spacing:.02em;margin:0}
+h1{font-size:56px;line-height:1;color:var(--accent);text-shadow:0 0 18px rgba(41,227,255,.35)}
+h2{font-size:22px}
+.sub{color:var(--muted);font-size:14px;margin-top:6px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.chip.in .dot{background:var(--good)}
+.btn{appearance:none;border:0;border-radius:14px;padding:16px;font:800 17px Inter,sans-serif;color:#05121a;background:var(--accent);cursor:pointer;width:100%}
+.btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+.btn.pink{background:var(--accent2);color:#fff}
+.btn:disabled{opacity:.45}
+.row{display:flex;gap:10px}
+.cards{display:flex;flex-direction:column;gap:10px;margin:18px 0;overflow:auto;flex:1}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;width:100%}
+.card.locked{opacity:.5;cursor:default}
+.card .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--panel2);flex:none}
+.card b{display:block;font-size:16px}
+.card span{font-size:13px;color:var(--muted)}
+.card .pb{margin-left:auto;font-family:"Russo One";color:var(--accent);font-size:15px;white-space:nowrap}
+.tag{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--muted);margin-left:auto}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
+.ring{width:150px;height:150px;border-radius:50%;border:6px solid var(--panel2);display:grid;place-items:center;font-family:"Russo One";font-size:64px;color:var(--accent);position:relative}
+.note{font-size:13px;color:var(--muted);max-width:320px;line-height:1.45}
+.err{color:var(--accent2);font-size:14px;min-height:18px}
+/* play */
+#play{padding-left:0;padding-right:0}
+.hud{display:flex;justify-content:space-between;align-items:flex-end;padding:0 16px}
+#timer{font-family:"Russo One";font-size:52px;line-height:1;font-variant-numeric:tabular-nums}
+#left{font-family:"Russo One";font-size:18px;color:var(--water);text-align:right}
+#left small{display:block;font-family:Inter;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.08em}
+#cv{flex:1;width:100%;min-height:0;touch-action:none}
+.meters{padding:0 16px;display:flex;flex-direction:column;gap:10px}
+.meter label{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
+.bar{height:14px;border-radius:8px;background:var(--panel2);overflow:hidden;position:relative}
+.bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:8px}
+#volBar{background:linear-gradient(90deg,var(--accent),var(--good))}
+#brBar{background:var(--warn)}
+#brBar.low{background:var(--accent2)}
+#banner{position:absolute;left:0;right:0;top:38%;text-align:center;font-family:"Russo One";font-size:48px;color:var(--accent2);text-shadow:0 0 20px rgba(255,61,127,.5);pointer-events:none;opacity:0;transition:opacity .15s}
+#banner.on{opacity:1}
+#practiceTag{position:absolute;top:max(16px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--warn);display:none}
+#holdHint{text-align:center;font-size:13px;color:var(--warn);padding:6px 0;display:none}
+/* results */
+.stat{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
+.stat b{font-family:"Russo One";font-weight:400}
+#resTime{font-size:72px;color:var(--accent);font-variant-numeric:tabular-nums}
+.badge{display:inline-block;background:var(--good);color:#04140b;font-weight:800;font-size:12px;letter-spacing:.1em;padding:5px 10px;border-radius:8px}
+#postBox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0;text-align:center;font-size:14px}
+#postBox .big{font-size:28px;color:var(--good)}
+/* board */
+.tabs{display:flex;background:var(--panel);border-radius:12px;padding:4px;margin:14px 0}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:700 14px Inter;padding:10px;border-radius:9px;cursor:pointer}
+.tabs button.on{background:var(--panel2);color:var(--ink)}
+#boardList{flex:1;overflow:auto}
+.lb{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
+.lb .r{width:32px;font-family:"Russo One";color:var(--muted)}
+.lb:nth-child(1) .r{color:var(--warn)}
+.lb .n{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .t{font-family:"Russo One";color:var(--accent);font-variant-numeric:tabular-nums}
+.lb.me{background:rgba(41,227,255,.08);border-radius:10px}
+.empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px}
+/* sheet */
+#sheet{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:5}
+#sheet.on{display:flex}
+.panel{width:100%;background:var(--panel);border-radius:20px 20px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--ink);font:600 17px Inter}
+input:focus{outline:2px solid var(--accent);border-color:transparent}
+.link{background:none;border:0;color:var(--accent);font:600 14px Inter;cursor:pointer;padding:6px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- MENU -->
+  <section class="screen on" id="menu">
+    <div class="top">
+      <button class="chip" id="acct"><span class="dot"></span><span id="acctName">Sign in</span></button>
+      <button class="chip" id="toBoard">🏆 Board</button>
+    </div>
+    <div style="margin-top:28px">
+      <h1>SLURP</h1>
+      <div class="sub">Finish the drink. Louder slurps drain faster. Watch your breath.</div>
+    </div>
+    <div class="cards" id="drinkCards"></div>
+  </section>
+
+  <!-- MIC / CALIBRATE -->
+  <section class="screen" id="cal">
+    <div class="top"><button class="chip" data-back>← Back</button><span></span></div>
+    <div class="center">
+      <div class="ring" id="calRing">🎤</div>
+      <h2 id="calTitle">Mic check</h2>
+      <div class="note" id="calNote">We listen for your slurp. Keep the phone close to the straw. First, stay quiet for a moment so we can hear the room.</div>
+      <div class="err" id="calErr"></div>
+      <button class="btn" id="calGo">Allow mic &amp; calibrate</button>
+      <button class="link" id="practiceGo" style="display:none">Practice without mic (hold to slurp, not posted)</button>
+    </div>
+  </section>
+
+  <!-- COUNTDOWN -->
+  <section class="screen" id="count">
+    <div class="center"><div class="ring" id="countN">3</div><div class="note" id="countNote">Get your lips on the straw…</div></div>
+  </section>
+
+  <!-- PLAY -->
+  <section class="screen" id="play">
+    <div id="practiceTag">PRACTICE</div>
+    <div class="hud">
+      <div id="timer">0.00</div>
+      <div id="left"><small>LEFT</small><span id="leftMl">0</span> ml</div>
+    </div>
+    <canvas id="cv"></canvas>
+    <div id="holdHint">Hold anywhere on the cup to slurp</div>
+    <div class="meters">
+      <div class="meter"><label><span>SLURP POWER</span><span id="volPct">0%</span></label><div class="bar"><i id="volBar"></i></div></div>
+      <div class="meter"><label><span>BREATH</span><span id="brTxt"></span></label><div class="bar"><i id="brBar"></i></div></div>
+      <button class="btn alt" id="quit" style="padding:10px;font-size:14px">Quit</button>
+    </div>
+    <div id="banner">GASP!</div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="screen" id="results">
+    <div class="center" style="justify-content:flex-start;padding-top:20px;gap:6px">
+      <div class="note" id="resDrink">ICE WATER</div>
+      <div class="big" id="resTime">0.00s</div>
+      <div id="resBadge"></div>
+    </div>
+    <div id="postBox"></div>
+    <div id="resStats"></div>
+    <div style="flex:1"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn alt" id="toMenu">Menu</button>
+      <button class="btn" id="again">Go again</button>
+    </div>
+  </section>
+
+  <!-- BOARD -->
+  <section class="screen" id="board">
+    <div class="top"><button class="chip" data-back>← Back</button><span class="chip" id="boardDrink" style="cursor:default">Ice Water</span></div>
+    <div class="tabs"><button class="on" data-tab="online">Online</button><button data-tab="local">This device</button></div>
+    <div id="boardList"></div>
+  </section>
+
+  <!-- SIGN IN SHEET -->
+  <div id="sheet">
+    <div class="panel">
+      <h2 id="shTitle">Sign in with WW</h2>
+      <div class="note" style="max-width:none" id="shNote">Same WW account as your other games.</div>
+      <input id="shName" placeholder="Name" maxlength="16" autocomplete="username" autocapitalize="off">
+      <input id="shPin" placeholder="4-digit PIN" maxlength="4" inputmode="numeric" type="password" autocomplete="current-password">
+      <div class="err" id="shErr"></div>
+      <button class="btn" id="shGo">Sign in</button>
+      <div class="row" style="justify-content:space-between">
+        <button class="link" id="shSwap">New here? Create account</button>
+        <button class="link" id="shCancel" style="color:var(--muted)">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+"use strict";
+/* ============ CONFIG ============ */
+const SB_URL = "https://bekcyzospcruszqtpcpe.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJla2N5em9zcGNydXN6cXRwY3BlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTMxNDk2NjUsImV4cCI6MjEwODcyNTY2NX0.-YerT8XJmGwzszIn1GnubzLhtcsW1LM9TIH0qSY8OAs";
+
+// Tuning knobs
+const T = {
+  maxFlow: 45,        // ml/s at full slurp power
+  flowCurve: 1.3,     // >1 rewards going louder
+  gateDb: 6,          // dB above room noise before a slurp counts
+  rangeDb: 30,        // dB above gate to reach full power
+  breathDrain: 10,    // per second while slurping (base)
+  breathDrainPow: 14, // extra per second at full power
+  breathRegen: 30,    // per second while resting
+  gaspTime: 1.2,      // seconds locked out when breath hits 0
+};
+
+// Drink roster: only ready drinks are playable. Each future drink adds its own mechanic.
+const DRINKS = [
+  { id:"water_ice", name:"Ice Water", ico:"🧊", ready:true, blurb:"Ice melts as you go — slow sippers drink more.",
+    water:400, ice:8, iceMl:12, meltMin:25, meltMax:60, color:["#8fe3ff","#2a9fe0"] },
+  { id:"soda",     name:"Soda",     ico:"🥤", ready:false, blurb:"Fizz builds up — you'll need to burp." },
+  { id:"boba",     name:"Boba",     ico:"🧋", ready:false, blurb:"Pearls clog the straw — tap to chew." },
+  { id:"slurpee",  name:"Slurpee",  ico:"🍧", ready:false, blurb:"Go too hard and brain freeze hits." },
+  { id:"smoothie", name:"Smoothie", ico:"🥭", ready:false, blurb:"Thick, cold, brain-freeze prone." },
+];
+const drinkById = id => DRINKS.find(d => d.id === id);
+
+/* ============ HELPERS ============ */
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const fmt = ms => (ms/1000).toFixed(2);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const store = {
+  get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch(e){ return null; } },
+  set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+  del(k){ try { localStorage.removeItem(k); } catch(e){} },
+};
+function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); }
+
+async function rpc(fn, args){
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method:"POST",
+    headers:{ apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, "Content-Type":"application/json" },
+    body: JSON.stringify(args)
+  });
+  const j = await r.json().catch(() => null);
+  if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Couldn't reach the server.");
+  return j;
+}
+
+/* ============ WW ACCOUNT ============ */
+let ww = store.get("ww_session"); // {name, token}
+function renderAcct(){
+  $("#acct").classList.toggle("in", !!ww);
+  $("#acctName").textContent = ww ? ww.name : "Sign in";
+}
+async function resume(){
+  if (!ww) return;
+  try { const r = await rpc("ww_resume", { p_name: ww.name, p_token: ww.token }); ww.name = r.name || ww.name; store.set("ww_session", ww); }
+  catch(e){ if (/sign in/i.test(e.message)) { ww = null; store.del("ww_session"); } }
+  renderAcct();
+}
+let sheetMode = "login", sheetDone = null;
+function openSheet(after){
+  sheetDone = after || null; sheetMode = "login"; paintSheet();
+  $("#shErr").textContent = ""; $("#shPin").value = "";
+  $("#sheet").classList.add("on"); setTimeout(() => $("#shName").focus(), 50);
+}
+function paintSheet(){
+  const c = sheetMode === "create";
+  $("#shTitle").textContent = c ? "Create a WW account" : "Sign in with WW";
+  $("#shGo").textContent = c ? "Create account" : "Sign in";
+  $("#shSwap").textContent = c ? "Have an account? Sign in" : "New here? Create account";
+  $("#shPin").autocomplete = c ? "new-password" : "current-password";
+}
+$("#shSwap").onclick = () => { sheetMode = sheetMode === "login" ? "create" : "login"; paintSheet(); $("#shErr").textContent=""; };
+$("#shCancel").onclick = () => { $("#sheet").classList.remove("on"); sheetDone = null; };
+$("#shGo").onclick = async () => {
+  const name = $("#shName").value.trim(), pin = $("#shPin").value.trim();
+  if (name.length < 2) return $("#shErr").textContent = "Enter your name.";
+  if (!/^\d{4}$/.test(pin)) return $("#shErr").textContent = "PIN is 4 digits.";
+  $("#shGo").disabled = true; $("#shErr").textContent = "";
+  try {
+    const r = await rpc(sheetMode === "create" ? "ww_create_account" : "ww_login", { p_name:name, p_pin:pin });
+    if (r && r.ok === false) throw new Error(r.error || "Couldn't sign in.");
+    ww = { name: r.name || name, token: r.token }; store.set("ww_session", ww); renderAcct();
+    $("#sheet").classList.remove("on");
+    const cb = sheetDone; sheetDone = null; if (cb) cb();
+  } catch(e){ $("#shErr").textContent = e.message; }
+  $("#shGo").disabled = false;
+};
+$("#acct").onclick = () => {
+  if (!ww) return openSheet();
+  if (confirm(`Signed in as ${ww.name}. Sign out?`)) {
+    rpc("ww_logout", { p_name: ww.name, p_token: ww.token }).catch(()=>{});
+    ww = null; store.del("ww_session"); renderAcct();
+  }
+};
+
+/* ============ MENU ============ */
+let drink = DRINKS[0];
+function localBoard(id){ return store.get("slurp_local_" + id) || []; }
+function renderMenu(){
+  $("#drinkCards").innerHTML = DRINKS.map(d => {
+    const best = d.ready ? localBoard(d.id)[0] : null;
+    return `<button class="card ${d.ready ? "" : "locked"}" data-d="${d.id}">
+      <div class="ico">${d.ico}</div>
+      <div><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div>
+      ${d.ready ? (best ? `<div class="pb">${fmt(best.ms)}s</div>` : `<div class="tag">PLAY</div>`) : `<div class="tag">SOON</div>`}
+    </button>`;
+  }).join("");
+  document.querySelectorAll("#drinkCards .card").forEach(el => el.onclick = () => {
+    const d = drinkById(el.dataset.d); if (!d.ready) return;
+    drink = d; startFlow();
+  });
+}
+document.querySelectorAll("[data-back]").forEach(b => b.onclick = () => { renderMenu(); show("menu"); });
+$("#toBoard").onclick = () => openBoard(drink.id);
+
+/* ============ MIC ============ */
+let ac = null, an = null, buf = null, floorDb = -60, micOk = false, practice = false;
+async function initMic(){
+  if (micOk) { if (ac.state !== "running") await ac.resume(); return; }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  ac = new (window.AudioContext || window.webkitAudioContext)();
+  await ac.resume();
+  const src = ac.createMediaStreamSource(stream);
+  an = ac.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0;
+  src.connect(an); buf = new Float32Array(an.fftSize); micOk = true;
+}
+function readDb(){
+  an.getFloatTimeDomainData(buf);
+  let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i]*buf[i];
+  return 20 * Math.log10(Math.sqrt(s / buf.length) + 1e-8);
+}
+function calibrate(){
+  return new Promise(res => {
+    const samples = [], t0 = performance.now(), dur = 1600;
+    (function tick(){
+      samples.push(readDb());
+      const p = (performance.now() - t0) / dur;
+      $("#calRing").textContent = Math.max(1, Math.ceil((1 - p) * 3));
+      if (p < 1) return requestAnimationFrame(tick);
+      samples.sort((a,b) => a-b);
+      res(samples[Math.floor(samples.length * 0.6)]); // ignore stray spikes
+    })();
+  });
+}
+function startFlow(){
+  practice = false;
+  $("#calErr").textContent = ""; $("#practiceGo").style.display = "none";
+  $("#calRing").textContent = "🎤"; $("#calTitle").textContent = "Mic check";
+  $("#calNote").textContent = "We listen for your slurp. Keep the phone close to the straw. First, stay quiet for a moment so we can hear the room.";
+  $("#calGo").style.display = ""; $("#calGo").disabled = false;
+  show("cal");
+}
+$("#calGo").onclick = async () => {
+  $("#calGo").disabled = true; $("#calErr").textContent = "";
+  try { await initMic(); }
+  catch(e){
+    $("#calErr").textContent = "No mic access. Allow the microphone for this site and try again.";
+    $("#practiceGo").style.display = ""; $("#calGo").disabled = false; return;
+  }
+  $("#calTitle").textContent = "Shh…"; $("#calNote").textContent = "Listening to the room.";
+  const f = await calibrate();
+  floorDb = clamp(f, -80, -25);
+  $("#calRing").textContent = "✓"; $("#calTitle").textContent = "Mic ready";
+  $("#calNote").textContent = f > -38 ? "It's loud in here — slurps will need to be louder to count." : "Nice and quiet.";
+  setTimeout(countdown, 700);
+};
+$("#practiceGo").onclick = () => { practice = true; countdown(); };
+
+/* ============ COUNTDOWN ============ */
+function countdown(){
+  show("count"); let n = 3; $("#countN").textContent = n;
+  $("#countNote").textContent = practice ? "Hold the cup to slurp" : "Get your lips on the straw…";
+  const iv = setInterval(() => {
+    n--; if (n > 0) { $("#countN").textContent = n; return; }
+    clearInterval(iv); $("#countN").textContent = "GO"; setTimeout(startRun, 350);
+  }, 750);
+}
+
+/* ============ GAME ============ */
+const cv = $("#cv"), g = cv.getContext("2d");
+let S = null, raf = 0, holding = false;
+function newState(){
+  const cubes = [];
+  for (let i = 0; i < drink.ice; i++) cubes.push({
+    ml: drink.iceMl, max: drink.iceMl,
+    rate: drink.iceMl / (drink.meltMin + Math.random() * (drink.meltMax - drink.meltMin)),
+    x: (i % 4) / 3 - 0.5 + (Math.random() - 0.5) * 0.12, row: Math.floor(i / 4), rot: Math.random() * 0.8 - 0.4, bob: Math.random() * 6.28
+  });
+  return { liquid: drink.water, cap: drink.water + drink.ice * drink.iceMl, cubes, t: 0, breath: 100, gasp: 0, power: 0,
+    gasps: 0, melted: 0, slurpTime: 0, powerSum: 0, peak: 0, bubbles: [], done: false };
+}
+function startRun(){
+  S = newState(); show("play"); resize();
+  $("#practiceTag").style.display = practice ? "block" : "none";
+  $("#holdHint").style.display = practice ? "block" : "none";
+  let last = performance.now();
+  cancelAnimationFrame(raf);
+  const loop = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    step(dt); draw(); hud();
+    if (!S.done) raf = requestAnimationFrame(loop);
+  };
+  raf = requestAnimationFrame(loop);
+}
+function inputPower(){
+  if (practice) return holding ? 0.85 : 0;
+  const db = readDb();
+  return clamp((db - floorDb - T.gateDb) / T.rangeDb, 0, 1);
+}
+function step(dt){
+  S.t += dt;
+  const raw = inputPower();
+  S.power += (raw - S.power) * Math.min(1, dt * 12);
+  const slurping = S.power > 0.06;
+  let flow = 0;
+  if (S.gasp > 0) {
+    S.gasp -= dt; S.breath = Math.min(100, S.breath + T.breathRegen * dt);
+  } else if (slurping) {
+    flow = T.maxFlow * Math.pow(S.power, T.flowCurve);
+    S.breath -= (T.breathDrain + T.breathDrainPow * S.power) * dt;
+    S.slurpTime += dt; S.powerSum += S.power * dt; S.peak = Math.max(S.peak, S.power);
+    if (S.breath <= 0) { S.breath = 0; S.gasp = T.gaspTime; S.gasps++; flash("GASP!"); }
+  } else {
+    S.breath = Math.min(100, S.breath + T.breathRegen * dt);
+  }
+  S.liquid -= flow * dt;
+  for (const c of S.cubes) {
+    if (c.ml <= 0) continue;
+    const m = Math.min(c.ml, c.rate * dt); c.ml -= m; S.liquid += m; S.melted += m;
+  }
+  S.flow = flow;
+  if (flow > 0 && Math.random() < dt * 30 * S.power) S.bubbles.push({ x: Math.random(), y: 0, v: 0.4 + Math.random() * 0.6, r: 2 + Math.random() * 4 });
+  S.bubbles.forEach(b => b.y += b.v * dt); S.bubbles = S.bubbles.filter(b => b.y < 1);
+  if (S.liquid <= 0.3) { S.liquid = 0; finish(); }
+}
+let flashT = 0;
+function flash(txt){ const b = $("#banner"); b.textContent = txt; b.classList.add("on"); clearTimeout(flashT); flashT = setTimeout(() => b.classList.remove("on"), 900); }
+function hud(){
+  $("#timer").textContent = fmt(S.t * 1000);
+  $("#leftMl").textContent = Math.ceil(S.liquid);
+  $("#volBar").style.width = (S.gasp > 0 ? 0 : S.power * 100) + "%";
+  $("#volPct").textContent = S.gasp > 0 ? "—" : Math.round(S.power * 100) + "%";
+  $("#brBar").style.width = S.breath + "%";
+  $("#brBar").classList.toggle("low", S.breath < 25 || S.gasp > 0);
+  $("#brTxt").textContent = S.gasp > 0 ? "CATCH YOUR BREATH" : "";
+}
+function resize(){
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
+  g.setTransform(d, 0, 0, d, 0, 0);
+}
+window.addEventListener("resize", () => { if (S && !S.done) resize(); });
+
+function draw(){
+  const W = cv.clientWidth, H = cv.clientHeight;
+  g.clearRect(0, 0, W, H);
+  const cupH = Math.min(H * 0.78, W * 1.15), topW = Math.min(W * 0.66, cupH * 0.78), botW = topW * 0.72;
+  const cx = W / 2, top = (H - cupH) / 2 + cupH * 0.06, bot = top + cupH;
+  const xAt = (y, side) => { const k = (y - top) / cupH, w = topW + (botW - topW) * k; return cx + side * w / 2; };
+  const cupPath = () => { g.beginPath(); g.moveTo(xAt(top,-1), top); g.lineTo(xAt(top,1), top); g.lineTo(xAt(bot,1), bot); g.lineTo(xAt(bot,-1), bot); g.closePath(); };
+
+  // liquid
+  const frac = clamp(S.liquid / S.cap, 0, 1), surf = bot - cupH * 0.94 * frac;
+  g.save(); cupPath(); g.clip();
+  const grad = g.createLinearGradient(0, surf, 0, bot);
+  grad.addColorStop(0, drink.color[0]); grad.addColorStop(1, drink.color[1]);
+  g.fillStyle = grad; g.globalAlpha = 0.85;
+  g.beginPath();
+  const wob = S.flow > 0 ? 3 * S.power : 1;
+  g.moveTo(0, surf);
+  for (let x = 0; x <= W; x += 8) g.lineTo(x, surf + Math.sin(x / 22 + S.t * 6) * wob);
+  g.lineTo(W, bot); g.lineTo(0, bot); g.closePath(); g.fill();
+  g.globalAlpha = 1;
+  // bubbles rising toward straw
+  g.fillStyle = "rgba(255,255,255,.55)";
+  for (const b of S.bubbles) {
+    const y = bot - (bot - surf) * b.y, x = cx + topW * 0.12 + (b.x - 0.5) * 22;
+    if (y > surf) { g.beginPath(); g.arc(x, y, b.r, 0, 7); g.fill(); }
+  }
+  // ice cubes
+  const cubeBase = topW * 0.2;
+  for (const c of S.cubes) {
+    if (c.ml <= 0.05) continue;
+    const s = cubeBase * Math.cbrt(c.ml / c.max);
+    const floatY = Math.max(surf + s * 0.35 + c.row * s * 0.75, top + s);
+    const y = Math.min(floatY + Math.sin(S.t * 2 + c.bob) * 2, bot - s * 0.55);
+    const x = cx + c.x * (topW * 0.62);
+    g.save(); g.translate(x, y); g.rotate(c.rot + Math.sin(S.t + c.bob) * 0.05);
+    g.fillStyle = "rgba(235,250,255,.78)"; g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 2;
+    roundRect(-s/2, -s/2, s, s, s * 0.22); g.fill(); g.stroke();
+    g.fillStyle = "rgba(255,255,255,.9)"; roundRect(-s*0.32, -s*0.32, s*0.22, s*0.1, 2); g.fill();
+    g.restore();
+  }
+  g.restore();
+
+  // straw (behind rim, on top of liquid)
+  const sx1 = cx + topW * 0.12, sx0 = sx1 + topW * 0.2, sy0 = top - cupH * 0.2, sy1 = bot - 8, sw = Math.max(10, topW * 0.07);
+  g.lineCap = "round";
+  g.strokeStyle = "#ff3d7f"; g.lineWidth = sw; g.beginPath(); g.moveTo(sx0, sy0); g.lineTo(sx1, sy1); g.stroke();
+  if (S.flow > 0) { // liquid traveling up the straw
+    g.strokeStyle = drink.color[0]; g.lineWidth = sw * 0.45; g.globalAlpha = 0.5 + 0.5 * S.power;
+    g.beginPath(); g.moveTo(sx1, sy1); g.lineTo(sx0, sy0); g.stroke(); g.globalAlpha = 1;
+  }
+  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(sx0 - sw*0.25, sy0); g.lineTo(sx1 - sw*0.25, sy1); g.stroke();
+
+  // cup outline + shine
+  cupPath(); g.strokeStyle = "rgba(242,245,255,.85)"; g.lineWidth = 4; g.lineJoin = "round"; g.stroke();
+  g.fillStyle = "rgba(255,255,255,.06)"; cupPath(); g.fill();
+  g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 6;
+  g.beginPath(); g.moveTo(xAt(top + cupH*0.08, -1) + 14, top + cupH*0.08); g.lineTo(xAt(top + cupH*0.6, -1) + 14, top + cupH*0.6); g.stroke();
+
+  function roundRect(x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+}
+// practice hold
+cv.addEventListener("pointerdown", e => { holding = true; e.preventDefault(); });
+// Block iOS long-press menus (copy/share/magnifier) everywhere except text inputs
+document.addEventListener("contextmenu", e => { if (e.target.tagName !== "INPUT") e.preventDefault(); });
+document.addEventListener("selectstart", e => { if (e.target.tagName !== "INPUT") e.preventDefault(); });
+cv.addEventListener("touchstart", e => e.preventDefault(), { passive:false });
+cv.addEventListener("touchend", e => { e.preventDefault(); holding = false; }, { passive:false });
+["pointerup","pointercancel","pointerleave"].forEach(ev => cv.addEventListener(ev, () => holding = false));
+$("#quit").onclick = () => { if (S) S.done = true; cancelAnimationFrame(raf); renderMenu(); show("menu"); };
+document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.done && $("#play").classList.contains("on")) { S.done = true; cancelAnimationFrame(raf); renderMenu(); show("menu"); } });
+
+/* ============ RESULTS ============ */
+let lastRun = null;
+function finish(){
+  if (S.done) return; S.done = true;
+  const ms = Math.round(S.t * 1000);
+  const stats = {
+    avg_power: S.slurpTime ? Math.round(S.powerSum / S.slurpTime * 100) : 0,
+    peak_power: Math.round(S.peak * 100),
+    ice_melted_ml: Math.round(S.melted),
+    gasps: S.gasps,
+    slurp_s: +S.slurpTime.toFixed(2),
+  };
+  lastRun = { drink: drink.id, ms, stats, practice, posted: false };
+  let newBest = false;
+  if (!practice) {
+    const lb = localBoard(drink.id);
+    newBest = !lb.length || ms < lb[0].ms;
+    lb.push({ ms, name: ww ? ww.name : "Guest", at: Date.now() });
+    lb.sort((a,b) => a.ms - b.ms); store.set("slurp_local_" + drink.id, lb.slice(0, 20));
+  }
+  setTimeout(() => showResults(newBest), 400);
+}
+function showResults(newBest){
+  const r = lastRun;
+  $("#resDrink").textContent = drink.name.toUpperCase() + (r.practice ? " · PRACTICE" : "");
+  $("#resTime").textContent = fmt(r.ms) + "s";
+  $("#resBadge").innerHTML = newBest ? `<span class="badge">NEW PERSONAL BEST</span>` : "";
+  $("#resStats").innerHTML = [
+    ["Avg slurp power", r.stats.avg_power + "%"], ["Peak power", r.stats.peak_power + "%"],
+    ["Ice melted into your drink", r.stats.ice_melted_ml + " ml"], ["Gasps", r.stats.gasps],
+  ].map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
+  paintPost(); show("results");
+  if (!r.practice && ww) post();
+}
+function paintPost(msg){
+  const r = lastRun, box = $("#postBox");
+  if (r.practice) { box.innerHTML = "Practice runs don't go on the board."; return; }
+  if (msg) { box.innerHTML = msg; return; }
+  if (!ww) {
+    box.innerHTML = `Sign in with your WW account to post this time.<div style="margin-top:10px"><button class="btn pink" id="postSign">Sign in &amp; post</button></div>`;
+    $("#postSign").onclick = () => openSheet(post);
+    return;
+  }
+  box.innerHTML = "Posting…";
+}
+async function post(){
+  const r = lastRun; if (!r || r.posted || r.practice || !ww) return;
+  paintPost();
+  try {
+    const res = await rpc("slurp_submit", { p_name: ww.name, p_token: ww.token, p_drink: r.drink, p_time_ms: r.ms, p_stats: r.stats });
+    r.posted = true;
+    paintPost(`<div class="big">#${res.rank}</div>${res.new_best ? "New online best!" : "Your online best: " + fmt(res.best_ms) + "s"}`);
+  } catch(e){
+    if (/sign in/i.test(e.message)) { ww = null; store.del("ww_session"); renderAcct(); paintPost(); }
+    else paintPost(`${esc(e.message)}<div style="margin-top:10px"><button class="btn alt" id="retryPost">Try again</button></div>`), $("#retryPost").onclick = post;
+  }
+}
+$("#again").onclick = () => practice ? countdown() : (micOk ? countdown() : startFlow());
+$("#toMenu").onclick = () => { renderMenu(); show("menu"); };
+
+/* ============ LEADERBOARD ============ */
+let boardTab = "online", boardDrink = "water_ice";
+function openBoard(id){ boardDrink = id; $("#boardDrink").textContent = drinkById(id).name; show("board"); paintBoard(); }
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  boardTab = b.dataset.tab; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); paintBoard();
+});
+async function paintBoard(){
+  const L = $("#boardList"), me = ww ? ww.name.toLowerCase() : null;
+  const row = (rk, n, ms, mine) => `<div class="lb ${mine ? "me" : ""}"><div class="r">${rk}</div><div class="n">${esc(n)}</div><div class="t">${fmt(ms)}s</div></div>`;
+  if (boardTab === "local") {
+    const lb = localBoard(boardDrink);
+    L.innerHTML = lb.length ? lb.map((e,i) => row(i+1, e.name, e.ms, false)).join("") : `<div class="empty">No runs on this device yet.</div>`;
+    return;
+  }
+  L.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await rpc("slurp_leaderboard", { p_drink: boardDrink, p_limit: 50 });
+    L.innerHTML = rows.length ? rows.map(e => row(e.rank, e.name, e.time_ms, me && e.name.toLowerCase() === me)).join("")
+      : `<div class="empty">No times yet. Be the first.</div>`;
+  } catch(e){ L.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+/* ============ BOOT ============ */
+renderAcct(); renderMenu(); resume();
+})();
+</script>
+</body>
+</html>
