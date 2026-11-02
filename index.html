@@ -4,7 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#fff4e8">
-<title>Slurp</title>
+<title>The Boba Shop</title>
+<meta name="apple-mobile-web-app-title" content="Boba Shop">
+<meta name="application-name" content="The Boba Shop">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
@@ -197,7 +204,7 @@ input:focus{outline:none;border-color:var(--pink)}
   <section class="screen" id="menu">
     <div class="top">
       <button class="chip" data-go="splash">← Shop</button>
-      <div class="row" style="gap:6px"><button class="chip" data-go="punch" id="stampChip">☕ 0</button><button class="chip acct"><span class="dot"></span><span class="acctName">Sign in</span></button></div>
+      <div class="row" style="gap:6px"><button class="chip" data-go="punch" id="stampChip">☕ 0</button><button class="chip acct"><span class="dot"></span><span class="acctName">Sign in</span></button><button class="chip musicBtn">♪ On</button></div>
     </div>
     <div class="scroll" style="margin-top:10px">
       <button class="special" id="specialCard">
@@ -214,7 +221,7 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- TICKET -->
   <section class="screen" id="ticket">
-    <div class="top"><button class="chip" data-go="menu">← Menu</button><span class="muted f" style="font-size:14px">Your order</span></div>
+    <div class="top"><button class="chip" data-go="menu">← Menu</button><button class="chip musicBtn">♪ On</button></div>
     <div class="scroll">
       <div class="ticket">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
@@ -222,6 +229,7 @@ input:focus{outline:none;border-color:var(--pink)}
           <div class="stars" id="tkStars" style="font-size:18px"></div>
         </div>
         <div class="sec" id="iceSec"><label>Ice</label><div class="seg" id="iceSeg"></div></div>
+        <div class="sec"><label><span>Sugar</span><span style="text-transform:none;letter-spacing:0">just for taste</span></label><div class="seg" id="sugarSeg"></div></div>
         <div class="sec"><label><span>Add-ons</span><span id="topCount">0 / 2</span></label><div class="tops" id="topsGrid"></div></div>
         <div class="sec"><label>What you're in for</label><div class="mechs" id="tkMechs"></div></div>
         <div class="sec" id="tkBest" style="font-size:13px;color:var(--muted)"></div>
@@ -233,7 +241,7 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- MIC -->
   <section class="screen" id="cal">
-    <div class="top"><button class="chip" data-go="ticket">← Order</button><span></span></div>
+    <div class="top"><button class="chip" data-go="ticket">← Order</button><button class="chip musicBtn">♪ On</button></div>
     <div class="center">
       <div class="ring" id="calRing">🎤</div>
       <h2 id="calTitle">Mic check</h2>
@@ -246,13 +254,13 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- COUNTDOWN -->
   <section class="screen" id="count">
+    <div class="top"><span></span><button class="chip musicBtn">♪ On</button></div>
     <div class="center"><div class="note f" style="font-size:16px" id="countOrder"></div><div class="ring" id="countN">3</div><div class="note" id="countNote"></div></div>
   </section>
 
   <!-- PLAY -->
   <section class="screen" id="play">
-    <div id="practiceTag">PRACTICE</div>
-    <div class="hud"><div id="timer">0.00</div><div id="left"></div></div>
+        <div class="hud"><div id="timer">0.00</div><button class="chip musicBtn" style="align-self:center">♪ On</button><div id="left"></div></div>
     <div id="playOrder"></div>
     <canvas id="cv"></canvas>
     <div id="hint"></div>
@@ -271,6 +279,7 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- RECEIPT -->
   <section class="screen" id="receipt">
+    <div class="top"><span></span><button class="chip musicBtn">♪ On</button></div>
     <div class="scroll" style="margin-top:6px">
       <div class="receipt">
         <div class="f" style="text-align:center;font-size:18px">THE BOBA SHOP</div>
@@ -292,7 +301,7 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- BOARDS -->
   <section class="screen" id="boards">
-    <div class="top"><button class="chip" data-back>← Back</button><h3>Leaderboards</h3><span style="width:60px"></span></div>
+    <div class="top"><button class="chip" data-back>← Back</button><h3>Leaderboards</h3><button class="chip musicBtn">♪ On</button></div>
     <div class="tabs scrolly" id="boardTabs">
       <button class="on" data-b="daily">⭐ Daily</button><button data-b="season" id="seasonBoardTab">Seasonal</button><button data-b="tea">Teas</button><button data-b="tea_clog">Teas + Pearls</button>
       <button data-b="blended">Blended</button><button data-b="blended_clog">Blended + Pearls</button><button data-b="mine">My bests</button>
@@ -303,7 +312,7 @@ input:focus{outline:none;border-color:var(--pink)}
 
   <!-- PUNCH CARD -->
   <section class="screen" id="punch">
-    <div class="top"><button class="chip" data-back>← Back</button><h3>Punch card</h3><span style="width:60px"></span></div>
+    <div class="top"><button class="chip" data-back>← Back</button><h3>Punch card</h3><button class="chip musicBtn">♪ On</button></div>
     <div class="scroll">
       <div class="punch">
         <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="f" style="font-size:18px">Loyalty card</b><span class="muted" id="punchTotal"></span></div>
@@ -407,6 +416,7 @@ const TOPS = [
 ];
 const topInSeason = t => !t.season || t.season === SEASON.id;
 const ICE = { none:0, less:4, regular:8, extra:12 };
+const SUGARS = [0, 50, 75, 100];
 const ICE_NAMES = { none:"No ice", less:"Less ice", regular:"Regular ice", extra:"Extra ice" };
 // Punch card rewards (cosmetic only)
 const STRAWS = [
@@ -451,7 +461,7 @@ async function rpc(fn, args){
 /* ============ ORDERS ============ */
 function normOrder(o){
   const b = base(o.base), tops = [...new Set((o.tops || []).filter(topping))].slice(0, 2).sort();
-  return { base: b.id, tops, ice: b.type === "blended" ? "na" : (ICE[o.ice] != null ? o.ice : "regular") };
+  return { base: b.id, tops, ice: b.type === "blended" ? "na" : (ICE[o.ice] != null ? o.ice : "regular"), sugar: SUGARS.includes(o.sugar) ? o.sugar : (store.get("slurp_sugar") ?? 50) };
 }
 const orderKey = o => `${o.base}|${o.tops.length ? o.tops.join("+") : "none"}|${o.ice}`;
 const parseKey = k => { const [b, t, i] = k.split("|"); return { base:b, tops: t === "none" ? [] : t.split("+"), ice:i }; };
@@ -461,6 +471,7 @@ function orderName(o, short){
   const b = base(o.base); let s = b.name;
   if (o.tops.length) s += " + " + o.tops.map(t => topping(t).name).join(", ");
   if (!short && b.type === "liquid") s += " · " + ICE_NAMES[o.ice];
+  if (!short && o.sugar != null) s += " · " + o.sugar + "% sugar";
   return s;
 }
 function stars(o){
@@ -625,6 +636,8 @@ function renderTicket(){
   $("#tkStars").innerHTML = starHtml(stars(order));
   $("#iceSec").style.display = b.type === "liquid" ? "" : "none";
   $("#iceSeg").innerHTML = Object.keys(ICE).map(k => `<button data-i="${k}" class="${order.ice === k ? "on" : ""}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("");
+  $("#sugarSeg").innerHTML = SUGARS.map(v => `<button data-s="${v}" class="${order.sugar === v ? "on" : ""}">${v}%</button>`).join("");
+  $$("#sugarSeg button").forEach(el => el.onclick = () => { order.sugar = +el.dataset.s; store.set("slurp_sugar", order.sugar); renderTicket(); });
   $$("#iceSeg button").forEach(el => el.onclick = () => { if (orderIsDaily) return lockedDaily(); order.ice = el.dataset.i; renderTicket(); });
   $("#topCount").textContent = `${order.tops.length} / 2`;
   $("#topsGrid").innerHTML = TOPS.filter(t => topInSeason(t) || order.tops.includes(t.id)).map(t => {
@@ -773,8 +786,7 @@ function startRun(){
     specks: Array.from({ length: blended ? 90 : 0 }, () => ({ x: Math.random(), y: Math.random(), r: .6 + Math.random() * 1.6 })) };
   for (let i = 0; i < 80; i++) physics(1 / 60);
   slurpOnMs = 0; slurpOffMs = 0; slurpGate = false; heard = "";
-  $("#practiceTag").style.display = practice ? "block" : "none";
-  $("#playOrder").textContent = orderName(order);
+  $("#playOrder").textContent = (practice ? "PRACTICE · " : "") + orderName(order);
   $("#mtName").textContent = blended ? "BRAIN FREEZE" : "BURP";
   $("#mtBar").classList.toggle("freeze", blended);
   $("#chewBtn").style.display = chewy.length ? "" : "none";
@@ -958,6 +970,9 @@ function draw(){
     const wob = S.blended ? .6 : (S.flow > 0 ? 2.5 : 1);
     for (let x = 0; x <= W; x += 8) g.lineTo(x, surf + Math.sin(x / 22 + S.t * 5) * wob);
     g.lineTo(W, bot); g.lineTo(0, bot); g.closePath(); g.fill();
+    const sug = order.sugar ?? 50; // sweeter looks richer, 0% looks lighter
+    if (sug !== 50) { g.save(); g.globalAlpha = sug > 50 ? (sug - 50) / 50 * .16 : .22; g.fillStyle = sug > 50 ? "#7a3d12" : "#ffffff"; g.fill(); g.restore(); }
+    if (sug >= 75) { g.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < (sug === 100 ? 14 : 7); i++) { const y = surf + 8 + ((i * 37) % 60); g.beginPath(); g.arc(xAt(y, -1) + ((i * 53) % 100) / 100 * (xAt(y, 1) - xAt(y, -1)), y + Math.sin(S.t * 2 + i) * 2, 1.2, 0, 7); g.fill(); } }
     drawDeco(b, surf);
     if (S.blended) { // icy specks + tornado swirl
       g.fillStyle = "rgba(255,255,255,.55)";
@@ -1020,10 +1035,8 @@ function draw(){
   }
   if (S.popT > 0) { g.fillStyle = `rgba(255,143,171,${S.popT})`; g.beginPath(); g.arc(G.P.x, top - 4, 34 * (1 - S.popT) + 8, 0, 7); g.fill(); }
 
-  // cup outline + shine
+  // cup outline
   cupPath(); g.strokeStyle = "rgba(74,47,39,.85)"; g.lineWidth = 4; g.lineJoin = "round"; g.stroke();
-  g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 6;
-  g.beginPath(); g.moveTo(xAt(top + cupH * .08, -1) + 14, top + cupH * .08); g.lineTo(xAt(top + cupH * .55, -1) + 14, top + cupH * .55); g.stroke();
   // brain freeze frost
   if (S.frozen > 0) {
     const a = Math.min(1, S.frozen / T.freezeLock + .2) * .75, rg = g.createRadialGradient(W/2, H/2, Math.min(W, H) * .2, W/2, H/2, Math.max(W, H) * .7);
@@ -1115,6 +1128,7 @@ function showReceipt(newBest, stampMsg){
   $("#rcNo").textContent = `Order #${String(Math.floor(Math.random() * 900) + 100)} · ${new Date().toLocaleDateString()}` + (r.practice ? " · PRACTICE" : "");
   const lines = [[b.name + (r.daily ? " ⭐" : ""), starHtml(stars(o))]];
   if (b.type === "liquid") lines.push([ICE_NAMES[o.ice], ""]);
+  lines.push([(o.sugar ?? 50) + "% sugar", ""]);
   o.tops.forEach(t => lines.push(["+ " + topping(t).name, ""]));
   $("#rcLines").innerHTML = lines.map(([a, c]) => `<div class="ln"><span>${esc(a)}</span><span class="stars">${c}</span></div>`).join("");
   $("#rcTime").textContent = fmt(r.ms) + "s";
