@@ -373,12 +373,12 @@ const T = {
   // add-ons
   // toppings always make one ~2.5-layer pile, split evenly between add-ons. "pile" on each topping = pieces for a full pile of just that topping.
   mouth: 3, pickRate: 4, travel: 0.35,
-  clog: [0.02, 0.1, 0.4, 0.8],      // clog chance per boba/mochi with 0/1/2/3+ layers above the tip
+  clogBoba: 0.06, clogMochi: 0.1,  // plain random chance that a pearl / mochi jams on its way up
   // unclogging: blow it down (low "wind" rumble on the mic) or suck it up (hard, steady slurp)
   blowLoud: 0.5, blowRatioMax: 0.35, blowTime: 0.6,   // loudness, how bass-heavy, seconds of blowing
   suckTime: 1.3, suckMin: 0.45, suckBreath: 38,      // seconds at full power, min slurp power, breath per second
   // volumes
-  liquidMl: 320, blendedMl: 320, iceMl: 12,
+  liquidMl: 300, blendedMl: 300, iceMl: 12,
 };
 
 /* ============ THE MENU ============ */
@@ -812,7 +812,7 @@ function geom(){
   const W = cv.clientWidth, H = cv.clientHeight;
   const cupH = Math.min(H * .76, W * 1.1), topW = Math.min(W * .66, cupH * .78), botW = topW * .72;
   const cx = W / 2, top = (H - cupH) / 2 + cupH * .1, bot = top + cupH;
-  return { W, H, cupH, topW, botW, cx, top, bot, r0: botW / 16, sw: Math.max(12, topW * .085), L: cupH * 1.3,
+  return { W, H, cupH, topW, botW, cx, top, bot, r0: botW / 16, sw: Math.max(20, topW * .135), L: cupH * 1.3,
     P: { x: cx, y: top }, xAt: (y, s) => { const k = (y - top) / cupH; return cx + s * (topW + (botW - topW) * k) / 2; } };
 }
 const JELLY = ["#ff9fb6","#ffd97a","#a8e08a","#9fd2ff","#ffb27a"];
@@ -851,7 +851,8 @@ function startRun(){
   };
   raf = requestAnimationFrame(loop);
 }
-const surfY = () => S.G.bot - S.G.cupH * .86 * clamp(S.liquid / S.cap, 0, 1);
+// full cup = drink right up under the lid. Ice takes up room, so drink + unmelted ice = full at the start.
+const surfY = () => S.G.bot - S.G.cupH * .95 * clamp((S.liquid + (S.liquid > 0 ? S.cubes.reduce((a, c) => a + c.ml, 0) : 0)) / S.cap, 0, 1);
 // The surface stays level with the real world, so on screen it leans against the cup. Never past the rim (no spills).
 const surfAt = x => clamp(surfY() - S.slope * (x - S.G.cx), S.G.top + 4, S.G.bot);
 let tiltTarget = 0, tiltAsked = false;
@@ -981,10 +982,10 @@ function step(dt){
   S.pieces.forEach((p, i) => { const d = Math.hypot(p.x - S.tip.x, p.y - S.tip.y) - p.r; if (d < G.sw / 2 + 5 && d < bd) { bd = d; best = i; } });
   S.air = suck > 0 && S.liquid > 0 && !inLiquid && best < 0;
   const hasClogTop = S.pieces.some(p => topping(p.type).clog);
-  S.risk = hasClogTop ? clogChance(layersAbove(), Math.max(suck, .5)) : 0;
+  S.risk = 0;
   if (suck > 0 && !S.inStraw && S.mouth.length < T.mouth && best >= 0 && Math.random() < dt * T.pickRate * suck * (inLiquid ? 1 : .6) / Math.max(.6, S.pieces[best].r / G.r0)) {
     const piece = S.pieces.splice(best, 1)[0], tp = topping(piece.type);
-    if (tp.clog && Math.random() < clogChance(layersAbove(), suck)) { S.clogged = true; S.clogs++; S.inStraw = { piece, p: .15 }; flash("CLOGGED!", "var(--warn)"); }
+    if (tp.clog && Math.random() < (tp.id === "mochi" ? T.clogMochi : T.clogBoba)) { S.clogged = true; S.clogs++; S.inStraw = { piece, p: .15 }; flash("CLOGGED!", "var(--warn)"); }
     else S.inStraw = { piece, p: 0 };
   }
   if (S.inStraw && !S.clogged && suck > 0) {
