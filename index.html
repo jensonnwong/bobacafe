@@ -363,10 +363,15 @@ const T = {
   burpRatioMax: 0.2, burpLoudMin: 0.25, burpHoldMs: 250,
   // brain freeze (blended)
   freezeRate: 20, freezeStreak: 3, freezeSettle: 7, freezeLock: 2.5,
+  // straw steering
+  steerSens: .6,     // tip moves this much per pixel dragged (lower = less sensitive)
+  steerSmooth: 10,   // how quickly the straw glides to where you aimed it (higher = snappier)
   // add-ons
   mouth: 3, pickRate: 4, travel: 0.35,
   clog: [0.02, 0.1, 0.4, 0.8],      // clog chance per boba/mochi with 0/1/2/3+ layers above the tip
-  blowLoud: 0.55, blowMs: 350,
+  // unclogging: blow it down (low "wind" rumble on the mic) or suck it up (hard, steady slurp)
+  blowLoud: 0.5, blowRatioMax: 0.35, blowTime: 0.6,   // loudness, how bass-heavy, seconds of blowing
+  suckTime: 1.3, suckMin: 0.45, suckBreath: 38,      // seconds at full power, min slurp power, breath per second
   // volumes
   liquidMl: 360, blendedMl: 330, iceMl: 12,
 };
@@ -668,15 +673,49 @@ function topSwatch(t){
 $("#orderUp").onclick = () => startFlow();
 
 /* ============ MIC ============ */
-let ac = null, an = null, buf = null, fbuf = null, floorDb = -60, micOk = false, practice = false;
-async function initMic(){
-  if (micOk) { if (ac.state !== "running") await ac.resume(); return; }
-  const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+let ac = null, an = null, buf = null, fbuf = null, micStream = null, floorDb = -60, micOk = false, practice = false;
+// Phones (especially iPhone) quietly kill the mic when the page sits in the background.
+// So every time we need it, check it's really alive, and rebuild it from scratch if not.
+function micLive(){
+  if (!micOk || !micStream || !ac || ac.state === "closed") return false;
+  return micStream.getAudioTracks().some(t => t.readyState === "live" && t.enabled && !t.muted);
+}
+function micTeardown(){
+  try { micStream && micStream.getTracks().forEach(t => t.stop()); } catch(e){}
+  try { ac && ac.state !== "closed" && ac.close(); } catch(e){}
+  ac = an = micStream = null; micOk = false;
+}
+async function initMic(force){
+  if (!force && micLive()) {
+    if (ac.state !== "running") { try { await ac.resume(); } catch(e){} }
+    if (ac.state === "running") return;
+  }
+  micTeardown();
+  micStream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+  micStream.getAudioTracks().forEach(t => { t.onended = () => { micOk = false; }; });
   ac = new (window.AudioContext || window.webkitAudioContext)(); await ac.resume();
-  const src = ac.createMediaStreamSource(stream);
+  ac.onstatechange = () => { if (ac && (ac.state === "closed" || ac.state === "interrupted")) micOk = false; };
+  const src = ac.createMediaStreamSource(micStream);
   an = ac.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0;
   src.connect(an); buf = new Float32Array(an.fftSize); fbuf = new Float32Array(an.frequencyBinCount); micOk = true;
 }
+// A dead mic delivers perfect digital silence (every sample exactly 0); a live one always has a little noise.
+function micSilent(ms = 300){
+  return new Promise(res => {
+    const t0 = performance.now(); let peak = 0;
+    (function tick(){
+      an.getFloatTimeDomainData(buf); for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i]));
+      if (performance.now() - t0 < ms) return requestAnimationFrame(tick);
+      res(peak === 0);
+    })();
+  });
+}
+// Get a mic that is definitely hearing sound; rebuild once if it comes back dead
+async function ensureMic(){
+  await initMic();
+  if (await micSilent()) { await initMic(true); if (await micSilent(500)) throw new Error("dead"); }
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden && micOk && !micLive()) micOk = false; });
 function readDb(){
   an.getFloatTimeDomainData(buf);
   let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
@@ -713,8 +752,14 @@ function startFlow(){
 }
 $("#calGo").onclick = async () => {
   $("#calGo").disabled = true; $("#calErr").textContent = "";
-  try { await initMic(); }
-  catch(e){ $("#calErr").textContent = "No mic access. Allow the microphone for this site and try again."; $("#practiceGo").style.display = ""; $("#calGo").disabled = false; return; }
+  $("#calTitle").textContent = "Connecting…";
+  try { await ensureMic(); }
+  catch(e){
+    $("#calErr").textContent = e.message === "dead"
+      ? "The mic isn't sending any sound. Close this tab and reopen the game, then try again."
+      : "No mic access. Allow the microphone for this site and try again.";
+    $("#calTitle").textContent = "Mic check"; $("#practiceGo").style.display = ""; $("#calGo").disabled = false; return;
+  }
   $("#calTitle").textContent = "Shh…"; $("#calNote").textContent = "Listening to the room.";
   const f = await calibrate(); floorDb = clamp(f, -80, -25);
   $("#calRing").textContent = "✓"; $("#calTitle").textContent = "Mic ready";
@@ -736,12 +781,13 @@ function countdown(){
 /* ============ INPUT ============ */
 let slurpOnMs = 0, slurpOffMs = 0, slurpGate = false, heard = "";
 function readInput(dt){
-  S.burpNow = false; S.loud = 0;
+  S.burpNow = false; S.loud = 0; S.ratio = 99;
   if (practice) { heard = holding ? "slurp" : ""; return holding ? .85 : 0; }
   const loud = clamp((readDb() - floorDb - T.gateDb) / T.rangeDb, 0, 1); // clamp = volume cap
   S.loud = loud;
   if (loud <= 0) { slurpOnMs = 0; slurpOffMs += dt * 1000; if (slurpOffMs > T.graceMs) slurpGate = false; heard = ""; return 0; }
   const s = spectrum();
+  S.ratio = s.ratio;
   S.burpNow = s.ratio < T.burpRatioMax && loud >= T.burpLoudMin;
   if (s.ok) { slurpOnMs += dt * 1000; slurpOffMs = 0; if (slurpOnMs >= T.holdMs) slurpGate = true; }
   else { slurpOnMs = 0; slurpOffMs += dt * 1000; if (slurpOffMs > T.graceMs) slurpGate = false; }
@@ -778,9 +824,9 @@ function startRun(){
     rate: T.iceMl / (25 + Math.random() * 35), x: (i % 4) / 3 - .5 + (Math.random() - .5) * .12, row: Math.floor(i / 4), rot: Math.random() * .8 - .4, bob: Math.random() * 6.28 });
   const vol = blended ? T.blendedMl : T.liquidMl;
   S = { G, b, blended, pieces, cubes, liquid: vol, cap: vol + cubes.length * T.iceMl, t: 0, popped: false, popT: 0,
-    tip: { x: G.cx, y: G.top - 10 }, breath: 100, gasp: 0, power: 0, flow: 0,
+    tip: { x: G.cx, y: G.top - 10 }, aim: { x: G.cx, y: G.top - 10 }, breath: 100, gasp: 0, power: 0, flow: 0,
     meter: 0, streak: 0, pauseT: 0, needBurp: false, burpMs: 0, burps: 0, burpWait: 0, frozen: 0, freezes: 0,
-    clogged: false, inStraw: null, mouth: [], blowMs: 0, practiceAct: false, air: false, risk: 0,
+    clogged: false, inStraw: null, mouth: [], blowP: 0, suckP: 0, blowHeld: false, practiceAct: false, air: false, risk: 0,
     gasps: 0, melted: 0, slurpTime: 0, powerSum: 0, peak: 0, eaten: 0, chews: 0, clogs: 0, done: false,
     deco: Array.from({ length: 14 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() })),
     specks: Array.from({ length: blended ? 90 : 0 }, () => ({ x: Math.random(), y: Math.random(), r: .6 + Math.random() * 1.6 })) };
@@ -800,8 +846,8 @@ function startRun(){
   raf = requestAnimationFrame(loop);
 }
 const surfY = () => S.G.bot - S.G.cupH * .86 * clamp(S.liquid / S.cap, 0, 1);
-function constrainTip(){
-  const G = S.G, t = S.tip, half = G.sw / 2 + 2;
+function constrainTip(t = S.tip){
+  const G = S.G, half = G.sw / 2 + 2;
   for (let k = 0; k < 2; k++) {
     const dx = t.x - G.P.x, dy = t.y - G.P.y, len = Math.hypot(dx, dy), max = G.L - 30;
     if (len > max) { t.x = G.P.x + dx / len * max; t.y = G.P.y + dy / len * max; }
@@ -840,24 +886,34 @@ function clogChance(h, power){
 }
 function popLid(){
   if (S.popped) return;
-  S.popped = true; S.tip = { x: S.G.cx, y: S.G.top + S.G.cupH * .4 }; constrainTip(); S.popT = .5;
+  S.popped = true; S.tip = { x: S.G.cx, y: S.G.top + S.G.cupH * .4 }; constrainTip(); S.aim = { ...S.tip }; S.popT = .5;
   flash("POP!", "var(--pink2)"); if (navigator.vibrate) navigator.vibrate(25);
 }
 function step(dt){
   const G = S.G, b = S.b;
   if (!S.popped) { physics(dt); return; }
   S.t += dt; S.popT = Math.max(0, S.popT - dt);
+  const k = 1 - Math.exp(-T.steerSmooth * dt); // glide toward the aim point
+  S.tip.x += (S.aim.x - S.tip.x) * k; S.tip.y += (S.aim.y - S.tip.y) * k; constrainTip();
   const raw = readInput(dt);
   S.power += (raw - S.power) * Math.min(1, dt * 12);
   const slurping = S.power > .06, rest = () => S.breath = Math.min(100, S.breath + T.breathRegen * dt);
   let suck = 0;
   if (S.clogged) {
-    rest();
-    const blowing = practice ? S.practiceAct : S.loud >= T.blowLoud;
-    S.blowMs = blowing ? S.blowMs + dt * 1000 : Math.max(0, S.blowMs - dt * 600);
-    if (blowing && S.blowMs >= (practice ? 0 : T.blowMs)) {
-      S.pieces.push({ ...S.inStraw.piece, x: S.tip.x + (Math.random() - .5) * 4, y: S.tip.y - G.r0 }); // shoots back into the cup
-      S.clogged = false; S.inStraw = null; S.blowMs = 0; S.practiceAct = false; flash("PFFT! ✓", "var(--good)");
+    const blowing = practice ? S.blowHeld : (S.loud >= T.blowLoud && S.ratio < T.blowRatioMax);
+    const sucking = !blowing && S.gasp <= 0 && S.power >= T.suckMin;
+    if (S.gasp > 0) S.gasp -= dt;
+    if (blowing) { S.blowP = Math.min(1, S.blowP + dt / T.blowTime); S.suckP = Math.max(0, S.suckP - dt); rest(); }
+    else if (sucking) {
+      S.suckP = Math.min(1, S.suckP + dt / T.suckTime * S.power); S.blowP = Math.max(0, S.blowP - dt);
+      S.breath -= T.suckBreath * dt;
+      if (S.breath <= 0) { S.breath = 0; S.gasp = T.gaspTime; S.gasps++; flash("GASP!"); }
+    } else { S.blowP = Math.max(0, S.blowP - dt * .8); S.suckP = Math.max(0, S.suckP - dt * .5); if (S.gasp <= 0) rest(); }
+    if (S.blowP >= 1) { // pushed back down into the cup
+      S.pieces.push({ ...S.inStraw.piece, x: S.tip.x + (Math.random() - .5) * 4, y: S.tip.y - G.r0 });
+      S.clogged = false; S.inStraw = null; S.blowP = S.suckP = 0; S.blowHeld = false; flash("PFFT! ✓", "var(--good)");
+    } else if (S.suckP >= 1) { // popped up through the straw
+      S.clogged = false; S.inStraw.p = .6; S.blowP = S.suckP = 0; flash("POP! ✓", "var(--good)");
     }
   } else if (S.frozen > 0) {
     S.frozen -= dt; S.burpWait += dt; rest(); S.meter = 100 * Math.max(0, S.frozen) / T.freezeLock;
@@ -919,7 +975,8 @@ function chew(){
   if (navigator.vibrate) navigator.vibrate(12);
 }
 $("#chewBtn").addEventListener("pointerdown", e => { e.preventDefault(); chew(); });
-$("#actBtn").addEventListener("pointerdown", e => { e.preventDefault(); if (S && (S.clogged || S.needBurp)) S.practiceAct = true; });
+$("#actBtn").addEventListener("pointerdown", e => { e.preventDefault(); if (!S) return; if (S.clogged) S.blowHeld = true; else if (S.needBurp) S.practiceAct = true; });
+["pointerup","pointercancel","pointerleave"].forEach(ev => $("#actBtn").addEventListener(ev, () => { if (S) S.blowHeld = false; }));
 
 let flashT = 0;
 function flash(txt, color){ const b = $("#banner"); b.textContent = txt; b.style.color = color || ""; b.classList.add("on"); clearTimeout(flashT); flashT = setTimeout(() => b.classList.remove("on"), 900); }
@@ -937,17 +994,16 @@ function hud(){
   $("#mouthPips").textContent = "●".repeat(S.mouth.length) + "○".repeat(T.mouth - S.mouth.length);
   $("#chewBtn").classList.toggle("full", full);
   const act = $("#actBtn"), need = practice && (S.clogged || S.needBurp);
-  act.style.display = need ? "" : "none"; if (need) act.textContent = S.clogged ? "💨 Blow" : "😮‍💨 Burp";
+  act.style.display = need ? "" : "none"; if (need) act.textContent = S.clogged ? "💨 Hold to blow" : "😮‍💨 Burp";
   let msg = "", col = "var(--muted)", vt = "";
   if (!S.popped) msg = "Tap the lid to stab your straw in!";
-  else if (S.clogged) { msg = S.blowMs > 0 ? "Keep blowing…" : practice ? "Clogged! Tap Blow" : "Clogged! Blow hard into the mic"; }
+  else if (S.clogged) { msg = S.blowP > .05 ? "Keep blowing… ⬇" : S.suckP > .05 ? "Keep sucking… ⬆" : practice ? "Stuck! Hold Blow ⬇ or hold the cup to suck ⬆" : "Stuck! Blow it down ⬇ or suck it up ⬆"; }
   else if (S.frozen > 0) msg = "Brain freeze! Hold on…";
   else if (S.needBurp) msg = S.burpMs > 0 ? "Keep it going…" : practice ? "Too much air! Tap Burp" : "Too much air! Burp into the mic";
   else if (S.air) msg = "Slurping air: lower the straw";
   else if (full && S.pieces.length) msg = "Mouth full: chew!";
   else if (practice) msg = "Hold to slurp · drag to steer";
   if (S.gasp > 0) vt = "—";
-  else if (heard === "noise") { vt = "NOT A SLURP"; col = "var(--bad)"; }
   else if (heard === "slurp") { vt = "SLURP ✓ " + Math.round(S.power * 100) + "%"; col = "var(--good)"; }
   $("#volTxt").textContent = vt; $("#volTxt").style.color = col;
   $("#hint").textContent = msg;
@@ -1028,7 +1084,19 @@ function draw(){
   g.strokeStyle = st.edge; g.lineWidth = 2;
   g.beginPath(); g.moveTo(ax + ox, ay + oy); g.lineTo(bx + ox, by + oy); g.moveTo(ax - ox, ay - oy); g.lineTo(bx - ox, by - oy); g.stroke();
   if (S.flow > 0) { g.strokeStyle = b.color[0]; g.globalAlpha = .85; g.lineWidth = sw * .55; g.beginPath(); g.moveTo(bx, by); g.lineTo(ax, ay); g.stroke(); g.globalAlpha = 1; }
-  if (S.inStraw) { const p = S.inStraw.p, pc = S.inStraw.piece; drawPiece(bx + (ax - bx) * p, by + (ay - by) * p, { ...pc, r: Math.min(pc.r, sw * .48) }); }
+  if (S.inStraw) {
+    const pc = S.inStraw.piece, p = S.clogged ? clamp(.15 + .4 * S.suckP - .15 * S.blowP, 0, 1) : S.inStraw.p;
+    const px = bx + (ax - bx) * p, py = by + (ay - by) * p;
+    drawPiece(px, py, { ...pc, r: Math.min(pc.r, sw * .48) });
+    if (S.clogged) { // progress ring: blue fills while blowing it down, pink while sucking it up
+      const R = sw * .95 + 4, prog = Math.max(S.blowP, S.suckP), col = S.blowP >= S.suckP ? "#5ab4ff" : "#ff6f91";
+      g.lineWidth = 5; g.strokeStyle = "rgba(74,47,39,.15)"; g.beginPath(); g.arc(px, py, R, 0, 7); g.stroke();
+      if (prog > 0) { g.strokeStyle = col; g.lineCap = "round"; g.beginPath(); g.arc(px, py, R, -Math.PI / 2, -Math.PI / 2 + prog * Math.PI * 2); g.stroke(); g.lineCap = "butt"; }
+      g.font = "700 13px Fredoka, sans-serif"; g.textAlign = "left";
+      g.fillStyle = S.suckP > S.blowP ? "#ff6f91" : "rgba(74,47,39,.55)"; g.fillText("⬆ suck", px + R + 6, py - 6);
+      g.fillStyle = S.blowP >= S.suckP && S.blowP > 0 ? "#5ab4ff" : "rgba(74,47,39,.55)"; g.fillText("⬇ blow", px + R + 6, py + 14);
+    }
+  }
   if (S.popped) {
     g.strokeStyle = "rgba(74,47,39,.85)"; g.lineWidth = 2; g.beginPath(); g.ellipse(G.P.x, top - 4, sw * .75, 4, 0, 0, 7); g.stroke();
     if (S.risk > 0) { const col = S.risk > .35 ? "#e8566f" : S.risk > .12 ? "#f2a31b" : "#3fae73"; g.strokeStyle = col; g.lineWidth = 3; g.beginPath(); g.arc(bx, by, sw * .7 + 3, 0, 7); g.stroke(); }
@@ -1083,7 +1151,7 @@ function draw(){
 }
 window.addEventListener("resize", () => { if (S && !S.done && screen === "play") { resize(); const o = S.G; S.G = geom(); const k = S.G.cupH / o.cupH;
   for (const p of S.pieces) { p.x = S.G.cx + (p.x - o.cx) * k; p.y = S.G.top + (p.y - o.top) * k; p.r *= k; }
-  S.tip.x = S.G.cx + (S.tip.x - o.cx) * k; S.tip.y = S.G.top + (S.tip.y - o.top) * k; } });
+  S.tip.x = S.G.cx + (S.tip.x - o.cx) * k; S.tip.y = S.G.top + (S.tip.y - o.top) * k; S.aim = { ...S.tip }; } });
 
 // touch: tap lid to stab, drag to steer, hold to slurp in practice
 let dragAt = null;
@@ -1095,7 +1163,8 @@ cv.addEventListener("pointerdown", e => {
 });
 cv.addEventListener("pointermove", e => {
   if (!dragAt || !S || !S.popped) return;
-  S.tip.x += e.clientX - dragAt.x; S.tip.y += e.clientY - dragAt.y; constrainTip(); dragAt = { x: e.clientX, y: e.clientY };
+  // you're holding the top of the straw: it pivots at the lid, so the tip swings the opposite way sideways; push down to go deeper
+  S.aim.x -= (e.clientX - dragAt.x) * T.steerSens; S.aim.y += (e.clientY - dragAt.y) * T.steerSens; constrainTip(S.aim); dragAt = { x: e.clientX, y: e.clientY };
 });
 ["pointerup","pointercancel","pointerleave"].forEach(ev => cv.addEventListener(ev, () => { holding = false; dragAt = null; }));
 cv.addEventListener("touchstart", e => e.preventDefault(), { passive:false });
@@ -1169,7 +1238,13 @@ async function post(){
     else { paintPost(`${esc(e.message)}<br><button class="btn alt" id="retryPost" style="margin-top:8px;padding:10px">Try again</button>`); $("#retryPost").onclick = post; }
   }
 }
-$("#rcAgain").onclick = () => { order = normOrder(lastRun.order); practice ? countdown() : (micOk ? countdown() : startFlow()); };
+$("#rcAgain").onclick = async () => {
+  order = normOrder(lastRun.order);
+  if (practice) return countdown();
+  // reuse the calibration only if the mic is still truly alive; otherwise redo the mic check
+  if (micLive()) { try { if (ac.state !== "running") await ac.resume(); if (ac.state === "running" && !(await micSilent(200))) return countdown(); } catch(e){} }
+  startFlow();
+};
 $("#rcNew").onclick = () => show("menu");
 
 /* ============ LEADERBOARDS ============ */
