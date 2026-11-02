@@ -364,8 +364,8 @@ const T = {
   // brain freeze (blended)
   freezeRate: 20, freezeStreak: 3, freezeSettle: 7, freezeLock: 2.5,
   // straw steering
-  steerSens: .6,     // tip moves this much per pixel dragged (lower = less sensitive)
-  steerSmooth: 10,   // how quickly the straw glides to where you aimed it (higher = snappier)
+  steerSens: .75,    // tip moves this much per pixel dragged (lower = less sensitive)
+  steerSmooth: 13,  // how quickly the straw glides to where you aimed it (higher = snappier)
   // tilt (phone motion sensor)
   tiltMax: 50,       // degrees of phone tilt we respond to
   slosh: 38, sloshDamp: 5.5, // springiness of the liquid surface
@@ -675,7 +675,7 @@ function topSwatch(t){
   if (t.shape === "mochi") return `background:${t.color};border:2px solid #f3c9d2`;
   return `background:${t.color};transform:scale(${t.size})`;
 }
-$("#orderUp").onclick = () => startFlow();
+$("#orderUp").onclick = () => { askTilt(); startFlow(); };
 
 /* ============ MIC ============ */
 let ac = null, an = null, buf = null, fbuf = null, micStream = null, floorDb = -60, micOk = false, practice = false;
@@ -705,20 +705,21 @@ async function initMic(force){
   src.connect(an); buf = new Float32Array(an.fftSize); fbuf = new Float32Array(an.frequencyBinCount); micOk = true;
 }
 // A dead mic delivers perfect digital silence (every sample exactly 0); a live one always has a little noise.
-function micSilent(ms = 300){
+// iPhones send a short burst of pure silence while the mic warms up, so wait up to `ms` for the first real sample.
+function micSilent(ms = 2000){
   return new Promise(res => {
-    const t0 = performance.now(); let peak = 0;
+    const t0 = performance.now();
     (function tick(){
-      an.getFloatTimeDomainData(buf); for (let i = 0; i < buf.length; i++) peak = Math.max(peak, Math.abs(buf[i]));
+      an.getFloatTimeDomainData(buf); for (let i = 0; i < buf.length; i++) if (buf[i] !== 0) return res(false);
       if (performance.now() - t0 < ms) return requestAnimationFrame(tick);
-      res(peak === 0);
+      res(true);
     })();
   });
 }
 // Get a mic that is definitely hearing sound; rebuild once if it comes back dead
 async function ensureMic(){
-  await initMic();
-  if (await micSilent()) { await initMic(true); if (await micSilent(500)) throw new Error("dead"); }
+  await initMic();                       // reuses the live mic; only asks the phone again if it was shut off
+  if (await micSilent()) throw new Error("dead");
 }
 document.addEventListener("visibilitychange", () => { if (!document.hidden && micOk && !micLive()) micOk = false; });
 function readDb(){
@@ -756,7 +757,6 @@ function startFlow(){
   show("cal");
 }
 $("#calGo").onclick = async () => {
-  askTilt();
   $("#calGo").disabled = true; $("#calErr").textContent = "";
   $("#calTitle").textContent = "Connecting…";
   try { await ensureMic(); }
@@ -1270,7 +1270,7 @@ $("#rcAgain").onclick = async () => {
   order = normOrder(lastRun.order);
   if (practice) return countdown();
   // reuse the calibration only if the mic is still truly alive; otherwise redo the mic check
-  if (micLive()) { try { if (ac.state !== "running") await ac.resume(); if (ac.state === "running" && !(await micSilent(200))) return countdown(); } catch(e){} }
+  if (micLive()) { try { if (ac.state !== "running") await ac.resume(); if (ac.state === "running" && !(await micSilent(800))) return countdown(); } catch(e){} }
   startFlow();
 };
 $("#rcNew").onclick = () => show("menu");
