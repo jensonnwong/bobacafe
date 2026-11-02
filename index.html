@@ -359,43 +359,48 @@ const T = {
   // slurp filter
   hiRatioMin: 0.5, flatnessMin: 0.12, holdMs: 160, graceMs: 140,
   // burp (liquid drinks)
-  burpRate: 22, burpStreak: 3, burpSettle: 6, burpPause: 0.3,
+  burpRate: 22, burpStreak: 3, burpSettle: 4, burpPause: 0.3,
   burpRatioMax: 0.2, burpLoudMin: 0.25, burpHoldMs: 250,
   // brain freeze (blended)
   freezeRate: 20, freezeStreak: 3, freezeSettle: 7, freezeLock: 2.5,
   // straw steering
   steerSens: .6,     // tip moves this much per pixel dragged (lower = less sensitive)
   steerSmooth: 10,   // how quickly the straw glides to where you aimed it (higher = snappier)
+  // tilt (phone motion sensor)
+  tiltMax: 50,       // degrees of phone tilt we respond to
+  slosh: 38, sloshDamp: 5.5, // springiness of the liquid surface
+  tiltSlide: 1.5,    // how strongly toppings slide downhill
   // add-ons
+  // toppings always make one ~2.5-layer pile, split evenly between add-ons. "pile" on each topping = pieces for a full pile of just that topping.
   mouth: 3, pickRate: 4, travel: 0.35,
   clog: [0.02, 0.1, 0.4, 0.8],      // clog chance per boba/mochi with 0/1/2/3+ layers above the tip
   // unclogging: blow it down (low "wind" rumble on the mic) or suck it up (hard, steady slurp)
   blowLoud: 0.5, blowRatioMax: 0.35, blowTime: 0.6,   // loudness, how bass-heavy, seconds of blowing
   suckTime: 1.3, suckMin: 0.45, suckBreath: 38,      // seconds at full power, min slurp power, breath per second
   // volumes
-  liquidMl: 360, blendedMl: 330, iceMl: 12,
+  liquidMl: 320, blendedMl: 320, iceMl: 12,
 };
 
 /* ============ THE MENU ============ */
 const BASES = [
-  { id:"honey_milk_tea", name:"Honey Milk Tea", type:"liquid", color:["#f3d6ad","#c9965f"], flow:.85, burp:.6, note:"Smooth & sweet · sips a little slower" },
-  { id:"oolong_milk_tea", name:"Oolong Milk Tea", type:"liquid", color:["#e3bf96","#9e6c3a"], flow:.85, burp:.6, note:"Toasty · sips a little slower" },
-  { id:"peach_tea", name:"Peach Tea", type:"liquid", color:["#ffcfa6","#f08a5d"], flow:1, burp:1, note:"Light · burps build faster" },
-  { id:"juice", name:"Juice", type:"liquid", color:["#ffe07a","#ff9f43"], flow:1.05, burp:1.1, note:"Thin & quick · burps build fastest" },
-  { id:"strawberry_matcha_latte", name:"Strawberry Matcha Latte", type:"liquid", color:["#a9cf86","#f29bb2"], layered:true, flow:.8, burp:.6, note:"Layered · thickest of the teas" },
+  { id:"honey_milk_tea", name:"Honey Milk Tea", type:"liquid", color:["#f3d6ad","#c9965f"], flow:.85, burp:.9, note:"Smooth & sweet · sips a little slower" },
+  { id:"oolong_milk_tea", name:"Oolong Milk Tea", type:"liquid", color:["#e3bf96","#9e6c3a"], flow:.85, burp:.9, note:"Toasty · sips a little slower" },
+  { id:"peach_tea", name:"Peach Tea", type:"liquid", color:["#ffcfa6","#f08a5d"], flow:1, burp:1.2, note:"Light · burps build faster" },
+  { id:"juice", name:"Juice", type:"liquid", color:["#ffe07a","#ff9f43"], flow:1.05, burp:1.3, note:"Thin & quick · burps build fastest" },
+  { id:"strawberry_matcha_latte", name:"Strawberry Matcha Latte", type:"liquid", color:["#a9cf86","#f29bb2"], layered:true, flow:.8, burp:.9, note:"Layered · thickest of the teas" },
   { id:"strawberry_tornado", name:"Strawberry Tornado", type:"blended", color:["#ffc2d1","#e8567c"], swirl:"#fff7f9", flow:.7, freeze:1, note:"Swirled · brain freeze" },
   { id:"mango_tornado", name:"Mango Tornado", type:"blended", color:["#ffe08e","#f39a26"], swirl:"#fff8e6", flow:.7, freeze:1, note:"Swirled · brain freeze" },
   { id:"taro_ice_milk", name:"Taro Ice Milk", type:"blended", color:["#ddc8f3","#a184d6"], flow:.7, freeze:1.15, note:"Creamy · freezes faster" },
   { id:"ube_matcha", name:"Blended Ube Matcha", type:"blended", color:["#a7cf86","#8a68cf"], layered:true, flow:.65, freeze:1.25, note:"Thickest · freezes fastest" },
   // Seasonal (shown only in their season)
-  { id:"pumpkin_spice_milk_tea", season:"fall", name:"Pumpkin Spice Milk Tea", type:"liquid", color:["#f6c68e","#c97a3a"], deco:"cinnamon", flow:.85, burp:.6, note:"Cozy & spiced · sips a little slower" },
+  { id:"pumpkin_spice_milk_tea", season:"fall", name:"Pumpkin Spice Milk Tea", type:"liquid", color:["#f6c68e","#c97a3a"], deco:"cinnamon", flow:.85, burp:.9, note:"Cozy & spiced · sips a little slower" },
   { id:"pumpkin_tornado", season:"fall", name:"Pumpkin Tornado", type:"blended", color:["#ffc887","#e8792b"], swirl:"#fff4e2", flow:.7, freeze:1, note:"Swirled · brain freeze" },
-  { id:"peppermint_mocha_milk_tea", season:"winter", name:"Peppermint Mocha Milk Tea", type:"liquid", color:["#c79a7c","#6e4330"], deco:"candy", flow:.8, burp:.6, note:"Chocolatey · candy cane bits" },
-  { id:"brown_sugar_boba_milk", season:"winter", name:"Brown Sugar Boba Milk", type:"liquid", color:["#fbf1e3","#e9d7bf"], deco:"tiger", flow:.8, burp:.6, note:"Tiger stripes · sips slower" },
-  { id:"sakura_strawberry_latte", season:"spring", name:"Sakura Strawberry Latte", type:"liquid", color:["#fde3ea","#f39ab4"], layered:true, deco:"petals", flow:.82, burp:.6, note:"Floral & layered" },
-  { id:"honey_lemon_tea", season:"spring", name:"Honey Lemon Tea", type:"liquid", color:["#fff0a8","#f7c948"], deco:"lemon", flow:1, burp:1, note:"Bright · burps build faster" },
+  { id:"peppermint_mocha_milk_tea", season:"winter", name:"Peppermint Mocha Milk Tea", type:"liquid", color:["#c79a7c","#6e4330"], deco:"candy", flow:.8, burp:.9, note:"Chocolatey · candy cane bits" },
+  { id:"brown_sugar_boba_milk", season:"winter", name:"Brown Sugar Boba Milk", type:"liquid", color:["#fbf1e3","#e9d7bf"], deco:"tiger", flow:.8, burp:.9, note:"Tiger stripes · sips slower" },
+  { id:"sakura_strawberry_latte", season:"spring", name:"Sakura Strawberry Latte", type:"liquid", color:["#fde3ea","#f39ab4"], layered:true, deco:"petals", flow:.82, burp:.9, note:"Floral & layered" },
+  { id:"honey_lemon_tea", season:"spring", name:"Honey Lemon Tea", type:"liquid", color:["#fff0a8","#f7c948"], deco:"lemon", flow:1, burp:1.2, note:"Bright · burps build faster" },
   { id:"watermelon_slush", season:"summer", name:"Watermelon Slush", type:"blended", color:["#ffb0b8","#ef4f63"], deco:"seeds", flow:.75, freeze:1.1, note:"Icy · freezes faster" },
-  { id:"lychee_fruit_tea", season:"summer", name:"Lychee Fruit Tea", type:"liquid", color:["#fff7f2","#f6d6d2"], deco:"lychee", flow:1, burp:1, note:"Light · burps build faster" },
+  { id:"lychee_fruit_tea", season:"summer", name:"Lychee Fruit Tea", type:"liquid", color:["#fff7f2","#f6d6d2"], deco:"lychee", flow:1, burp:1.2, note:"Light · burps build faster" },
 ];
 // Seasons (Pacific time): Sep-Nov fall, Dec-Feb winter, Mar-May spring, Jun-Aug summer
 const SEASONS = {
@@ -411,11 +416,11 @@ const SEASON = (() => {
 })();
 const inSeason = b => !b.season || b.season === SEASON.id;
 const TOPS = [
-  { id:"boba", name:"Boba Pearls", clog:true, chews:2, size:1, count:26, shape:"ball", color:"#2a160c", sub:"Hard · can clog" },
-  { id:"mini_pearls", name:"Mini Pearls", chews:1, size:.6, count:40, shape:"ball", color:"#4a2a18", sub:"Easy · chew" },
-  { id:"jelly", name:"Jelly", chews:1, size:.9, count:22, shape:"cube", color:"rainbow", sub:"Easy · chew" },
-  { id:"grass_jelly", name:"Grass Jelly", chews:1, size:.9, count:22, shape:"cube", color:"#2f2c25", sub:"Easy · chew" },
-  { id:"mochi", name:"Mochi", clog:true, chews:3, size:1.25, count:14, shape:"mochi", color:"#fff3f3", sub:"Hard · can clog" },
+  { id:"boba", name:"Boba Pearls", clog:true, chews:2, size:1, pile:18, shape:"ball", color:"#2a160c", sub:"Hard · can clog" },
+  { id:"mini_pearls", name:"Mini Pearls", chews:1, size:.6, pile:46, shape:"ball", color:"#4a2a18", sub:"Easy · chew" },
+  { id:"jelly", name:"Jelly", chews:1, size:.9, pile:23, shape:"cube", color:"rainbow", sub:"Easy · chew" },
+  { id:"grass_jelly", name:"Grass Jelly", chews:1, size:.9, pile:21, shape:"cube", color:"#2f2c25", sub:"Easy · chew" },
+  { id:"mochi", name:"Mochi", clog:true, chews:3, size:1.25, pile:11, shape:"mochi", color:"#fff3f3", sub:"Hard · can clog" },
   { id:"cold_foam", name:"Cold Foam", visual:true, foam:"#f6e4c8", sub:"Just looks great" },
   { id:"pumpkin_cold_foam", name:"Pumpkin Cream Foam", visual:true, foam:"#ffdcb0", season:"fall", sub:"🍂 Seasonal · looks great" },
 ];
@@ -751,6 +756,7 @@ function startFlow(){
   show("cal");
 }
 $("#calGo").onclick = async () => {
+  askTilt();
   $("#calGo").disabled = true; $("#calErr").textContent = "";
   $("#calTitle").textContent = "Connecting…";
   try { await ensureMic(); }
@@ -766,7 +772,7 @@ $("#calGo").onclick = async () => {
   $("#calNote").textContent = f > -38 ? "It's loud in here. Slurps will need to be louder to count." : "Nice and quiet.";
   setTimeout(countdown, 700);
 };
-$("#practiceGo").onclick = () => { practice = true; countdown(); };
+$("#practiceGo").onclick = () => { askTilt(); practice = true; countdown(); };
 
 function countdown(){
   show("count"); let n = 3; $("#countN").textContent = n;
@@ -815,7 +821,7 @@ function startRun(){
   const G = geom(), b = base(order.base), blended = b.type === "blended";
   const chewy = order.tops.map(topping).filter(t => !t.visual), pieces = [];
   for (const t of chewy) {
-    const n = Math.round(t.count * (chewy.length > 1 ? .6 : 1));
+    const n = Math.max(3, Math.round(t.pile / chewy.length)); // one fixed pile, shared
     for (let i = 0; i < n; i++) pieces.push({ type: t.id, r: G.r0 * t.size, x: G.cx + (Math.random() - .5) * G.botW * .8,
       y: G.bot - G.cupH * (.05 + Math.random() * .35), rot: Math.random() * 6.28, col: t.color === "rainbow" ? JELLY[i % JELLY.length] : t.color });
   }
@@ -825,7 +831,7 @@ function startRun(){
   const vol = blended ? T.blendedMl : T.liquidMl;
   S = { G, b, blended, pieces, cubes, liquid: vol, cap: vol + cubes.length * T.iceMl, t: 0, popped: false, popT: 0,
     tip: { x: G.cx, y: G.top - 10 }, aim: { x: G.cx, y: G.top - 10 }, breath: 100, gasp: 0, power: 0, flow: 0,
-    meter: 0, streak: 0, pauseT: 0, needBurp: false, burpMs: 0, burps: 0, burpWait: 0, frozen: 0, freezes: 0,
+    ang: 0, angV: 0, slope: 0, meter: 0, streak: 0, pauseT: 0, needBurp: false, burpMs: 0, burps: 0, burpWait: 0, frozen: 0, freezes: 0,
     clogged: false, inStraw: null, mouth: [], blowP: 0, suckP: 0, blowHeld: false, practiceAct: false, air: false, risk: 0,
     gasps: 0, melted: 0, slurpTime: 0, powerSum: 0, peak: 0, eaten: 0, chews: 0, clogs: 0, done: false,
     deco: Array.from({ length: 14 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() })),
@@ -846,6 +852,25 @@ function startRun(){
   raf = requestAnimationFrame(loop);
 }
 const surfY = () => S.G.bot - S.G.cupH * .86 * clamp(S.liquid / S.cap, 0, 1);
+// The surface stays level with the real world, so on screen it leans against the cup. Never past the rim (no spills).
+const surfAt = x => clamp(surfY() - S.slope * (x - S.G.cx), S.G.top + 4, S.G.bot);
+let tiltTarget = 0, tiltAsked = false;
+function askTilt(){ // iPhone needs a tap-triggered permission request for motion
+  if (tiltAsked) return; tiltAsked = true;
+  try { if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") DeviceOrientationEvent.requestPermission().catch(() => {}); } catch(e){}
+}
+window.addEventListener("deviceorientation", e => {
+  if (e.gamma == null) return;
+  const a = (screen.orientation && screen.orientation.angle) || window.orientation || 0;
+  if (Math.abs(a) === 90) return; // game is portrait; ignore sideways phones
+  tiltTarget = clamp(e.gamma, -T.tiltMax, T.tiltMax) * Math.PI / 180;
+});
+function stepTilt(dt){
+  S.angV += ((tiltTarget - S.ang) * T.slosh - S.angV * T.sloshDamp) * dt;
+  S.ang += S.angV * dt;
+  const surf = surfY(), maxSlope = Math.max(0, (surf - S.G.top - 6) / (S.G.topW / 2)); // keep it inside the cup
+  S.slope = clamp(Math.tan(S.ang), -maxSlope, maxSlope);
+}
 function constrainTip(t = S.tip){
   const G = S.G, half = G.sw / 2 + 2;
   for (let k = 0; k < 2; k++) {
@@ -857,7 +882,8 @@ function constrainTip(t = S.tip){
 }
 function physics(dt){
   const G = S.G, ps = S.pieces;
-  for (const p of ps) p.y += (S.liquid > 0 ? 80 : 160) * dt;
+  const sink = (S.liquid > 0 ? 80 : 160) * dt, ga = S.ang || 0;
+  for (const p of ps) { p.y += sink * Math.cos(ga); p.x += sink * Math.sin(ga) * T.tiltSlide; }
   for (let it = 0; it < 4; it++) {
     for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
       const a = ps[i], b = ps[j], dx = b.x - a.x, dy = b.y - a.y, min = a.r + b.r, dd = dx * dx + dy * dy;
@@ -891,6 +917,7 @@ function popLid(){
 }
 function step(dt){
   const G = S.G, b = S.b;
+  stepTilt(dt);
   if (!S.popped) { physics(dt); return; }
   S.t += dt; S.popT = Math.max(0, S.popT - dt);
   const k = 1 - Math.exp(-T.steerSmooth * dt); // glide toward the aim point
@@ -933,7 +960,7 @@ function step(dt){
     if (S.breath <= 0) { S.breath = 0; S.gasp = T.gaspTime; S.gasps++; flash("GASP!"); }
   } else rest();
 
-  const surf = surfY(), inLiquid = S.liquid > 0 && (S.tip.y > surf + 3 || S.tip.y > G.bot - 14);
+  const surf = surfY(), inLiquid = S.liquid > 0 && (S.tip.y > surfAt(S.tip.x) + 3 || S.tip.y > G.bot - 14);
   S.flow = 0;
   if (suck > 0 && inLiquid) { S.flow = T.maxFlow * b.flow * Math.pow(suck, T.flowCurve); S.liquid = Math.max(0, S.liquid - S.flow * dt); }
   // burp / brain freeze meter: hard, nonstop drinking builds it; pauses settle it
@@ -955,7 +982,7 @@ function step(dt){
   S.air = suck > 0 && S.liquid > 0 && !inLiquid && best < 0;
   const hasClogTop = S.pieces.some(p => topping(p.type).clog);
   S.risk = hasClogTop ? clogChance(layersAbove(), Math.max(suck, .5)) : 0;
-  if (suck > 0 && !S.inStraw && S.mouth.length < T.mouth && best >= 0 && Math.random() < dt * T.pickRate * suck * (inLiquid ? 1 : .6)) {
+  if (suck > 0 && !S.inStraw && S.mouth.length < T.mouth && best >= 0 && Math.random() < dt * T.pickRate * suck * (inLiquid ? 1 : .6) / Math.max(.6, S.pieces[best].r / G.r0)) {
     const piece = S.pieces.splice(best, 1)[0], tp = topping(piece.type);
     if (tp.clog && Math.random() < clogChance(layersAbove(), suck)) { S.clogged = true; S.clogs++; S.inStraw = { piece, p: .15 }; flash("CLOGGED!", "var(--warn)"); }
     else S.inStraw = { piece, p: 0 };
@@ -1022,24 +1049,24 @@ function draw(){
     const grad = g.createLinearGradient(0, surf, 0, bot);
     if (b.layered) { grad.addColorStop(0, b.color[0]); grad.addColorStop(.42, b.color[0]); grad.addColorStop(.58, b.color[1]); grad.addColorStop(1, b.color[1]); }
     else { grad.addColorStop(0, b.color[0]); grad.addColorStop(1, b.color[1]); }
-    g.fillStyle = grad; g.beginPath(); g.moveTo(0, surf);
-    const wob = S.blended ? .6 : (S.flow > 0 ? 2.5 : 1);
-    for (let x = 0; x <= W; x += 8) g.lineTo(x, surf + Math.sin(x / 22 + S.t * 5) * wob);
-    g.lineTo(W, bot); g.lineTo(0, bot); g.closePath(); g.fill();
+    const wob = S.blended ? .6 : (S.flow > 0 ? 2.5 : 1) + Math.min(3, Math.abs(S.angV) * 3);
+    const liquidPath = () => { g.beginPath(); g.moveTo(0, surfAt(0)); for (let x = 0; x <= W; x += 8) g.lineTo(x, surfAt(x) + Math.sin(x / 22 + S.t * 5) * wob); g.lineTo(W, bot + 2); g.lineTo(0, bot + 2); g.closePath(); };
+    g.fillStyle = grad; liquidPath(); g.fill();
+    g.save(); liquidPath(); g.clip(); // everything "in" the drink stays inside the liquid
     const sug = order.sugar ?? 50; // sweeter looks richer, 0% looks lighter
-    if (sug !== 50) { g.save(); g.globalAlpha = sug > 50 ? (sug - 50) / 50 * .16 : .22; g.fillStyle = sug > 50 ? "#7a3d12" : "#ffffff"; g.fill(); g.restore(); }
-    if (sug >= 75) { g.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < (sug === 100 ? 14 : 7); i++) { const y = surf + 8 + ((i * 37) % 60); g.beginPath(); g.arc(xAt(y, -1) + ((i * 53) % 100) / 100 * (xAt(y, 1) - xAt(y, -1)), y + Math.sin(S.t * 2 + i) * 2, 1.2, 0, 7); g.fill(); } }
-    drawDeco(b, surf);
+    if (sug !== 50) { g.globalAlpha = sug > 50 ? (sug - 50) / 50 * .16 : .22; g.fillStyle = sug > 50 ? "#7a3d12" : "#ffffff"; g.fillRect(0, 0, W, H); g.globalAlpha = 1; }
+    if (sug >= 75) { g.fillStyle = "rgba(255,255,255,.5)"; for (let i = 0; i < (sug === 100 ? 14 : 7); i++) { const x0 = xAt(surf, -1) + ((i * 53) % 100) / 100 * (xAt(surf, 1) - xAt(surf, -1)), y = surfAt(x0) + 8 + ((i * 37) % 60); g.beginPath(); g.arc(x0, y + Math.sin(S.t * 2 + i) * 2, 1.2, 0, 7); g.fill(); } }
+    drawDeco(b, Math.min(surfAt(xAt(surf, -1)), surfAt(xAt(surf, 1))));
     if (S.blended) { // icy specks + tornado swirl
       g.fillStyle = "rgba(255,255,255,.55)";
-      for (const s of S.specks) { if (b.deco === "seeds") g.fillStyle = s.r > 1.6 ? "#2a1a14" : "rgba(255,255,255,.55)"; const y = surf + (bot - surf) * s.y; g.beginPath(); g.arc(xAt(y, -1) + (xAt(y, 1) - xAt(y, -1)) * s.x, y, s.r, 0, 7); g.fill(); }
+      for (const s of S.specks) { if (b.deco === "seeds") g.fillStyle = s.r > 1.6 ? "#2a1a14" : "rgba(255,255,255,.55)"; const st0 = Math.min(surfAt(xAt(surf, -1)), surfAt(xAt(surf, 1))), y = st0 + (bot - st0) * s.y; g.beginPath(); g.arc(xAt(y, -1) + (xAt(y, 1) - xAt(y, -1)) * s.x, y, s.r, 0, 7); g.fill(); }
       if (b.swirl) {
         g.strokeStyle = b.swirl; g.lineWidth = 7; g.globalAlpha = .7;
         for (let k = 0; k < 3; k++) { g.beginPath(); for (let y = surf + 6; y < bot; y += 6) { const f = (y - surf) / (bot - surf); g.lineTo(cx + Math.sin(f * 7 + k * 2.1) * (xAt(y,1) - cx) * .85, y); } g.stroke(); }
         g.globalAlpha = 1;
       }
     }
-
+    g.restore();
   }
   // bubbles up the straw when drinking
   for (const p of S.pieces) drawPiece(p.x, p.y, p);
@@ -1047,18 +1074,18 @@ function draw(){
   const cs = G.topW * .17;
   for (const c of S.cubes) {
     if (c.ml <= .05 || S.liquid <= 0) continue;
-    const s = cs * Math.cbrt(c.ml / c.max), y = Math.min(Math.max(surf + s * .35 + c.row * s * .75, top + s) + Math.sin(S.t * 2 + c.bob) * 2, bot - s * .55);
-    g.save(); g.translate(cx + c.x * G.topW * .62, y); g.rotate(c.rot + Math.sin(S.t + c.bob) * .05);
+    const s = cs * Math.cbrt(c.ml / c.max), ix = cx + c.x * G.topW * .62, y = Math.min(Math.max(surfAt(ix) + s * .35 + c.row * s * .75, top + s) + Math.sin(S.t * 2 + c.bob) * 2, bot - s * .55);
+    g.save(); g.translate(ix, y); g.rotate(c.rot + Math.sin(S.t + c.bob) * .05 - Math.atan(S.slope) * .6);
     g.fillStyle = "rgba(235,250,255,.75)"; g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 2;
     rr(-s/2, -s/2, s, s, s * .22); g.fill(); g.stroke(); g.restore();
   }
     const foamTop = order.tops.map(topping).filter(t => t.foam).pop();
     if (foamTop && S.liquid > 0) { // cold foam cap
-      g.fillStyle = foamTop.foam; g.strokeStyle = "rgba(160,115,70,.45)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, surf + 20);
-      for (let x = 0; x <= W; x += 6) g.lineTo(x, surf - 6 + Math.sin(x / 10 + S.t * 1.5) * 2.5);
-      g.lineTo(W, surf + 20); for (let x = W; x >= 0; x -= 6) g.lineTo(x, surf + 18 + Math.sin(x / 7) * 3); g.closePath(); g.fill(); g.stroke();
-      g.fillStyle = "rgba(255,255,255,.7)"; for (let x = 12; x < W; x += 23) { g.beginPath(); g.arc(x, surf + 2 + Math.sin(x) * 3, 2.5, 0, 7); g.fill(); }
-      if (foamTop.id === "pumpkin_cold_foam") { g.fillStyle = "rgba(170,85,30,.75)"; for (let x = 10; x < W; x += 9) { g.beginPath(); g.arc(x, surf - 2 + Math.sin(x * 1.7) * 4, 1.3, 0, 7); g.fill(); } }
+      g.fillStyle = foamTop.foam; g.strokeStyle = "rgba(160,115,70,.45)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, surfAt(0) + 20);
+      for (let x = 0; x <= W; x += 6) g.lineTo(x, surfAt(x) - 6 + Math.sin(x / 10 + S.t * 1.5) * 2.5);
+      for (let x = W; x >= 0; x -= 6) g.lineTo(x, surfAt(x) + 18 + Math.sin(x / 7) * 3); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "rgba(255,255,255,.7)"; for (let x = 12; x < W; x += 23) { g.beginPath(); g.arc(x, surfAt(x) + 2 + Math.sin(x) * 3, 2.5, 0, 7); g.fill(); }
+      if (foamTop.id === "pumpkin_cold_foam") { g.fillStyle = "rgba(170,85,30,.75)"; for (let x = 10; x < W; x += 9) { g.beginPath(); g.arc(x, surfAt(x) - 2 + Math.sin(x * 1.7) * 4, 1.3, 0, 7); g.fill(); } }
     }
   g.restore();
 
@@ -1122,7 +1149,7 @@ function draw(){
       return;
     }
     for (const d of S.deco) {
-      const y = surf + 4 + d.y * 10, x = ins(y, .08 + d.x * .84);
+      const x = ins(surf, .08 + d.x * .84), y = surfAt(x) + 4 + d.y * 10;
       if (y > bot) continue;
       if (b.deco === "cinnamon") { g.fillStyle = "rgba(140,70,25,.8)"; g.beginPath(); g.arc(x, y - 2, 1.4 + d.r * 1.4, 0, 7); g.fill(); }
       else if (b.deco === "candy") { g.fillStyle = d.r > .5 ? "#e8334a" : "#fff"; g.save(); g.translate(x, y); g.rotate(d.r * 6); g.fillRect(-4, -1.5, 8, 3); g.restore(); }
