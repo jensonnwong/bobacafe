@@ -3,175 +3,326 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<meta name="theme-color" content="#0b0f1a">
+<meta name="theme-color" content="#fff4e8">
 <title>Slurp</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Russo+One&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b0f1a; --panel:#141a2b; --panel2:#1c2440; --line:#2a3458;
-  --ink:#f2f5ff; --muted:#8a93b0; --accent:#29e3ff; --accent2:#ff3d7f;
-  --good:#3dff9a; --warn:#ffd23d; --water:#5fd4ff; --water2:#1f8fd6;
+  --bg:#fff4e8; --paper:#fffaf4; --card:#ffffff; --ink:#4a2f27; --muted:#9b7f73; --line:#f0dccb;
+  --pink:#ff8fab; --pink2:#ff6f91; --matcha:#8fbf6a; --taro:#b59ad9; --tea:#e2bf98; --mango:#ffc260;
+  --board:#33463b; --chalk:#f4f1e6; --good:#3fae73; --warn:#f2a31b; --bad:#e8566f;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 input{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
-canvas,#play{touch-action:none}
-html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Inter,system-ui,sans-serif;overscroll-behavior:none}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font-family:Nunito,system-ui,sans-serif;overscroll-behavior:none}
 body{display:flex;justify-content:center}
-#app{width:100%;max-width:480px;height:100dvh;position:relative;overflow:hidden}
-.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+#app{width:100%;max-width:480px;height:100dvh;position:relative;overflow:hidden;background:var(--bg)}
+.screen{position:absolute;inset:0;display:none;flex-direction:column;padding:max(14px,env(safe-area-inset-top)) 16px max(14px,env(safe-area-inset-bottom))}
 .screen.on{display:flex}
-h1,h2,.big{font-family:"Russo One",Inter,sans-serif;letter-spacing:.02em;margin:0}
-h1{font-size:56px;line-height:1;color:var(--accent);text-shadow:0 0 18px rgba(41,227,255,.35)}
-h2{font-size:22px}
-.sub{color:var(--muted);font-size:14px;margin-top:6px}
-.top{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.chip{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:8px 12px;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer;white-space:nowrap;max-width:60%;overflow:hidden;text-overflow:ellipsis}
-.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+h1,h2,h3,.f{font-family:Fredoka,Nunito,sans-serif;margin:0;font-weight:700}
+h2{font-size:24px} h3{font-size:17px}
+.muted{color:var(--muted)}
+.top{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:40px}
+.chip{background:var(--card);border:2px solid var(--line);border-radius:999px;padding:7px 12px;font:700 13px Nunito;color:var(--ink);cursor:pointer;white-space:nowrap;max-width:55vw;overflow:hidden;text-overflow:ellipsis}
+.chip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d8c4b6;margin-right:6px}
 .chip.in .dot{background:var(--good)}
-.btn{appearance:none;border:0;border-radius:14px;padding:16px;font:800 17px Inter,sans-serif;color:#05121a;background:var(--accent);cursor:pointer;width:100%}
-.btn.alt{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
-.btn.pink{background:var(--accent2);color:#fff}
+.btn{appearance:none;border:0;border-radius:18px;padding:15px;font:700 17px Fredoka,Nunito;color:#fff;background:var(--pink2);cursor:pointer;width:100%;box-shadow:0 4px 0 #d9506f}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 #d9506f}
+.btn.alt{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:0 4px 0 var(--line)}
+.btn.green{background:var(--matcha);box-shadow:0 4px 0 #6e9f4c}
 .btn:disabled{opacity:.45}
 .row{display:flex;gap:10px}
-.cards{display:flex;flex-direction:column;gap:10px;margin:18px 0;overflow:auto;flex:1}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;text-align:left;color:var(--ink);font:inherit;width:100%}
-.card.locked{opacity:.5;cursor:default}
-.card .ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;background:var(--panel2);flex:none}
-.card b{display:block;font-size:16px}
-.card span{font-size:13px;color:var(--muted)}
-.card .pb{margin-left:auto;font-family:"Russo One";color:var(--accent);font-size:15px;white-space:nowrap}
-.tag{font-size:11px;font-weight:800;letter-spacing:.08em;padding:3px 8px;border-radius:6px;background:var(--panel2);color:var(--muted);margin-left:auto}
+.scroll{overflow:auto;flex:1;margin:0 -16px;padding:0 16px}
+.err{color:var(--bad);font-size:14px;min-height:18px;font-weight:700}
+.note{font-size:14px;color:var(--muted);line-height:1.45;max-width:330px}
 .center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px}
-.ring{width:150px;height:150px;border-radius:50%;border:6px solid var(--panel2);display:grid;place-items:center;font-family:"Russo One";font-size:64px;color:var(--accent);position:relative}
-.note{font-size:13px;color:var(--muted);max-width:320px;line-height:1.45}
-.err{color:var(--accent2);font-size:14px;min-height:18px}
+.link{background:none;border:0;color:var(--pink2);font:800 14px Nunito;cursor:pointer;padding:6px}
+.badge{display:inline-flex;align-items:center;gap:4px;font:800 11px Nunito;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:#f7e9dc;color:var(--ink)}
+.stars{color:var(--warn);letter-spacing:1px;font-size:14px}
+.stars .off{color:#ead9c9}
+
+/* splash */
+#splash{background:radial-gradient(120% 70% at 50% 0%,#ffe1ea 0%,var(--bg) 60%)}
+#splash h1{font-size:34px;line-height:1.1}
+.awning{position:absolute;left:0;right:0;top:0;height:26px;background:repeating-linear-gradient(90deg,var(--awn,var(--pink)) 0 28px,#fff 28px 56px);border-bottom-left-radius:14px;border-bottom-right-radius:14px;opacity:.9}
+#fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:0;display:none}
+#fx.on{display:block}
+#fx span{position:absolute;top:-40px;animation:fall linear infinite;opacity:.85}
+@keyframes fall{0%{transform:translate(0,-5vh) rotate(0)}50%{transform:translate(28px,50vh) rotate(160deg)}100%{transform:translate(-12px,108vh) rotate(320deg)}}
+.screen{z-index:1}
+.seasonTag{display:inline-block;background:#fff;border:2px dashed var(--awn,var(--pink));border-radius:999px;padding:6px 12px;font:800 13px Nunito;color:var(--ink);margin-top:4px}
+.awning::after{content:"";position:absolute;left:0;right:0;bottom:-10px;height:12px;background:radial-gradient(circle at 14px -2px,var(--awn,var(--pink)) 12px,transparent 13px) 0 0/56px 12px repeat-x}
+
+/* menu board */
+.board{background:var(--board);color:var(--chalk);border-radius:18px;padding:14px 14px 10px;border:6px solid #8a5a3c;box-shadow:inset 0 0 30px rgba(0,0,0,.25)}
+.board h3{color:#fff;font-size:15px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin:6px 0 6px}
+.mi{display:flex;align-items:center;gap:12px;width:100%;background:none;border:0;border-bottom:1px dashed rgba(255,255,255,.18);padding:11px 2px;color:var(--chalk);font:inherit;text-align:left;cursor:pointer}
+.mi:last-child{border-bottom:0}
+.mi .cup{width:30px;height:38px;flex:none;border-radius:4px 4px 9px 9px;position:relative;border:2px solid rgba(255,255,255,.7);overflow:hidden}
+.mi b{font:600 16px Fredoka;display:block;color:#fff}
+.mi small{font-size:12px;opacity:.75}
+.mi .r{margin-left:auto;text-align:right;font-size:12px;white-space:nowrap}
+.mi.locked{opacity:.45}
+.tabs{display:flex;background:#f6e6d7;border-radius:14px;padding:4px;margin:12px 0}
+.tabs button{flex:1;border:0;background:none;color:var(--muted);font:800 13px Nunito;padding:9px 6px;border-radius:11px;cursor:pointer;white-space:nowrap}
+.tabs button.on{background:var(--card);color:var(--ink);box-shadow:0 2px 0 var(--line)}
+.special{background:linear-gradient(135deg,#fff,#ffeef3);border:2px dashed var(--pink);border-radius:18px;padding:12px 14px;display:flex;gap:12px;align-items:center;cursor:pointer;width:100%;text-align:left;font:inherit;color:var(--ink)}
+.special .tag{font:800 11px Nunito;color:var(--pink2);letter-spacing:.08em}
+
+/* ticket */
+.ticket{background:var(--paper);border-radius:6px;padding:18px 16px;box-shadow:0 6px 18px rgba(74,47,39,.12);position:relative;margin-top:10px}
+.ticket::before,.ticket::after{content:"";position:absolute;left:0;right:0;height:10px;background:radial-gradient(circle at 8px 0,transparent 7px,var(--paper) 8px) 0 0/16px 10px repeat-x}
+.ticket::before{top:-9px;transform:rotate(180deg)}
+.ticket::after{bottom:-9px}
+.sec{margin-top:14px}
+.sec label{font:800 12px Nunito;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;display:flex;justify-content:space-between}
+.seg{display:flex;gap:6px;margin-top:8px}
+.seg button{flex:1;border:2px solid var(--line);background:var(--card);border-radius:12px;padding:9px 0;font:800 13px Nunito;color:var(--ink);cursor:pointer}
+.seg button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tops{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.top-b{border:2px solid var(--line);background:var(--card);border-radius:14px;padding:10px;text-align:left;font:inherit;color:var(--ink);cursor:pointer;display:flex;gap:9px;align-items:center}
+.top-b.on{border-color:var(--pink2);background:#fff0f4}
+.top-b.locked{opacity:.45}
+.top-b i{width:22px;height:22px;border-radius:50%;flex:none}
+.top-b b{display:block;font-size:14px}
+.top-b small{font-size:11px;color:var(--muted)}
+.mechs{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+
+/* mic / count */
+.ring{width:150px;height:150px;border-radius:50%;background:var(--card);border:6px solid #ffd7e1;display:grid;place-items:center;font:700 60px Fredoka;color:var(--pink2)}
+
 /* play */
 #play{padding-left:0;padding-right:0}
 .hud{display:flex;justify-content:space-between;align-items:flex-end;padding:0 16px}
-#timer{font-family:"Russo One";font-size:52px;line-height:1;font-variant-numeric:tabular-nums}
-#left{font-family:"Russo One";font-size:18px;color:var(--water);text-align:right}
-#left small{display:block;font-family:Inter;font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.08em}
+#timer{font:700 48px Fredoka;line-height:1;font-variant-numeric:tabular-nums}
+#left{font:700 16px Fredoka;color:var(--ink);text-align:right}
+#left small{display:block;font:800 10px Nunito;color:var(--muted);letter-spacing:.1em}
+#playOrder{text-align:center;font:800 12px Nunito;color:var(--muted);padding:2px 16px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #cv{flex:1;width:100%;min-height:0;touch-action:none}
-.meters{padding:0 16px;display:flex;flex-direction:column;gap:10px}
-.meter label{display:flex;justify-content:space-between;font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--muted);margin-bottom:4px}
-.bar{height:14px;border-radius:8px;background:var(--panel2);overflow:hidden;position:relative}
+.meters{padding:0 16px;display:flex;flex-direction:column;gap:8px}
+.meter label{display:flex;justify-content:space-between;font:800 10px Nunito;letter-spacing:.1em;color:var(--muted);margin-bottom:3px}
+.bar{height:12px;border-radius:8px;background:#f1e2d4;overflow:hidden;position:relative}
 .bar i{position:absolute;left:0;top:0;bottom:0;width:0;border-radius:8px}
-#volBar{background:linear-gradient(90deg,var(--accent),var(--good))}
-#brBar{background:var(--warn)}
-#brBar.low{background:var(--accent2)}
-#banner{position:absolute;left:0;right:0;top:38%;text-align:center;font-family:"Russo One";font-size:48px;color:var(--accent2);text-shadow:0 0 20px rgba(255,61,127,.5);pointer-events:none;opacity:0;transition:opacity .15s}
+#volBar{background:linear-gradient(90deg,var(--pink),var(--pink2))}
+#brBar{background:var(--matcha)}
+#brBar.low{background:var(--bad)}
+#mtBar{background:linear-gradient(90deg,var(--mango),var(--warn))}
+#mtBar.freeze{background:linear-gradient(90deg,#9fd8ff,#5ab4ff)}
+#mtBar.full{background:var(--bad);animation:pulse .45s infinite alternate}
+@keyframes pulse{from{opacity:1}to{opacity:.45}}
+#banner{position:absolute;left:0;right:0;top:36%;text-align:center;font:700 44px Fredoka;color:var(--bad);text-shadow:0 3px 0 #fff,0 0 18px rgba(255,255,255,.9);pointer-events:none;opacity:0;transition:opacity .15s}
 #banner.on{opacity:1}
-#practiceTag{position:absolute;top:max(16px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;letter-spacing:.1em;color:var(--warn);display:none}
-#holdHint{text-align:center;font-size:13px;color:var(--warn);padding:6px 0;display:none}
-/* results */
-.stat{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:15px}
-.stat b{font-family:"Russo One";font-weight:400}
-#resTime{font-size:72px;color:var(--accent);font-variant-numeric:tabular-nums}
-.badge{display:inline-block;background:var(--good);color:#04140b;font-weight:800;font-size:12px;letter-spacing:.1em;padding:5px 10px;border-radius:8px}
-#postBox{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin:14px 0;text-align:center;font-size:14px}
-#postBox .big{font-size:28px;color:var(--good)}
-/* board */
-.tabs{display:flex;background:var(--panel);border-radius:12px;padding:4px;margin:14px 0}
-.tabs button{flex:1;border:0;background:none;color:var(--muted);font:700 14px Inter;padding:10px;border-radius:9px;cursor:pointer}
-.tabs button.on{background:var(--panel2);color:var(--ink)}
-#boardList{flex:1;overflow:auto}
-.lb{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line)}
-.lb .r{width:32px;font-family:"Russo One";color:var(--muted)}
+#practiceTag{position:absolute;top:max(14px,env(safe-area-inset-top));left:50%;transform:translateX(-50%);font:800 11px Nunito;letter-spacing:.1em;color:var(--warn);display:none}
+#hint{text-align:center;font:800 13px Nunito;color:var(--pink2);padding:4px 0;min-height:22px}
+#actBtn{flex:1;padding:11px}
+#chewBtn{flex:2;padding:11px;touch-action:manipulation;background:var(--ink);box-shadow:0 4px 0 #2e1c17}
+#chewBtn.full{background:var(--warn);box-shadow:0 4px 0 #c47f0c;animation:pulse .4s infinite alternate}
+
+/* receipt */
+.receipt{background:var(--paper);padding:18px 18px 14px;box-shadow:0 6px 18px rgba(74,47,39,.12);font-size:14px;position:relative;margin:6px 0 10px}
+.receipt::after{content:"";position:absolute;left:0;right:0;bottom:-9px;height:10px;background:radial-gradient(circle at 8px 0,transparent 7px,var(--paper) 8px) 0 0/16px 10px repeat-x}
+.receipt .ln{display:flex;justify-content:space-between;padding:5px 0}
+.receipt hr{border:0;border-top:2px dashed var(--line);margin:8px 0}
+#rcTime{font:700 56px Fredoka;text-align:center;color:var(--pink2);font-variant-numeric:tabular-nums;line-height:1.1}
+#rcPost{text-align:center;font-weight:800}
+.stamp{display:inline-grid;place-items:center;width:46px;height:46px;border-radius:50%;border:3px solid var(--pink2);color:var(--pink2);font:700 20px Fredoka;transform:rotate(-12deg)}
+
+/* boards */
+.tabs.scrolly{overflow-x:auto;justify-content:flex-start}
+.tabs.scrolly button{flex:none;padding:9px 12px}
+.lb{display:flex;align-items:center;gap:12px;padding:11px 4px;border-bottom:2px dashed var(--line)}
+.lb .r{width:28px;font:700 17px Fredoka;color:var(--muted)}
 .lb:nth-child(1) .r{color:var(--warn)}
-.lb .n{flex:1;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb .t{font-family:"Russo One";color:var(--accent);font-variant-numeric:tabular-nums}
-.lb.me{background:rgba(41,227,255,.08);border-radius:10px}
+.lb .n{flex:1;min-width:0}
+.lb .n b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .n small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb .t{font:700 17px Fredoka;color:var(--pink2);font-variant-numeric:tabular-nums}
+.lb.me{background:#fff0f4;border-radius:12px}
 .empty{color:var(--muted);text-align:center;padding:40px 10px;font-size:14px}
+
+/* punch card */
+.punch{background:var(--card);border-radius:20px;padding:16px;border:2px solid var(--line);margin-top:10px}
+.holes{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+.hole{aspect-ratio:1;border-radius:50%;border:2px dashed #e5cdb9;display:grid;place-items:center;font-size:22px}
+.hole.on{border:0;background:#ffe3ea}
+.unl{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:2px dashed var(--line)}
+.unl .n{flex:1}
+.unl .p{font:800 13px Nunito;color:var(--muted)}
+.unl.done .p{color:var(--good)}
+
 /* sheet */
-#sheet{position:absolute;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:5}
+#sheet{position:absolute;inset:0;background:rgba(74,47,39,.45);display:none;align-items:flex-end;z-index:5}
 #sheet.on{display:flex}
-.panel{width:100%;background:var(--panel);border-radius:20px 20px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
-input{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:14px;color:var(--ink);font:600 17px Inter}
-input:focus{outline:2px solid var(--accent);border-color:transparent}
-.link{background:none;border:0;color:var(--accent);font:600 14px Inter;cursor:pointer;padding:6px}
+.panel{width:100%;background:var(--paper);border-radius:22px 22px 0 0;padding:20px 16px max(20px,env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:12px}
+input{width:100%;background:#fff;border:2px solid var(--line);border-radius:14px;padding:13px;color:var(--ink);font:700 17px Nunito}
+input:focus{outline:none;border-color:var(--pink)}
 </style>
 </head>
 <body>
 <div id="app">
+  <div id="fx"></div>
 
-  <!-- MENU -->
-  <section class="screen on" id="menu">
-    <div class="top">
-      <button class="chip" id="acct"><span class="dot"></span><span id="acctName">Sign in</span></button>
-      <button class="chip" id="toBoard">🏆 Board</button>
+  <!-- SPLASH -->
+  <section class="screen on" id="splash">
+    <div class="awning"></div>
+    <div class="top" style="margin-top:22px">
+      <button class="chip acct"><span class="dot"></span><span class="acctName">Sign in</span></button>
+      <button class="chip musicBtn">♪ On</button>
     </div>
-    <div style="margin-top:28px">
-      <h1>SLURP</h1>
-      <div class="sub">Finish the drink. Louder slurps drain faster. Watch your breath.</div>
+    <div class="center" style="gap:10px">
+      <svg width="170" height="210" viewBox="0 0 170 210" aria-hidden="true">
+        <rect x="96" y="4" width="16" height="70" rx="3" transform="rotate(14 104 40)" fill="#ff8fab" opacity=".9"/>
+        <path d="M30 52 h110 l-12 140 a12 12 0 0 1 -12 11 h-62 a12 12 0 0 1 -12 -11z" fill="#f2d2ae" stroke="#4a2f27" stroke-width="5" stroke-linejoin="round"/>
+        <path d="M33 85 h104 l-9 107 a12 12 0 0 1 -12 11 h-62 a12 12 0 0 1 -12 -11z" fill="#e2bf98"/>
+        <g fill="#3a2015"><circle cx="58" cy="186" r="9"/><circle cx="78" cy="190" r="9"/><circle cx="98" cy="188" r="9"/><circle cx="116" cy="184" r="9"/><circle cx="68" cy="171" r="9"/><circle cx="88" cy="173" r="9"/><circle cx="108" cy="170" r="9"/></g>
+        <rect x="22" y="44" width="126" height="12" rx="6" fill="#fff" stroke="#4a2f27" stroke-width="5"/>
+        <circle cx="68" cy="120" r="4" fill="#4a2f27"/><circle cx="102" cy="120" r="4" fill="#4a2f27"/>
+        <path d="M76 132 q9 8 18 0" fill="none" stroke="#4a2f27" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="58" cy="130" r="6" fill="#ff8fab" opacity=".6"/><circle cx="112" cy="130" r="6" fill="#ff8fab" opacity=".6"/>
+      </svg>
+      <h1>Welcome to<br>the boba shop!</h1>
+      <div class="note" style="font-size:16px">Are you ready to place your order?</div>
+      <button class="seasonTag" id="seasonTag"></button>
     </div>
-    <div class="cards" id="drinkCards"></div>
+    <button class="btn" id="goOrder">Place my order</button>
+    <div class="row" style="justify-content:center;margin-top:10px">
+      <button class="link" data-go="boards">🏆 Leaderboards</button>
+      <button class="link" data-go="punch">☕ Punch card</button>
+    </div>
   </section>
 
-  <!-- MIC / CALIBRATE -->
+  <!-- MENU -->
+  <section class="screen" id="menu">
+    <div class="top">
+      <button class="chip" data-go="splash">← Shop</button>
+      <div class="row" style="gap:6px"><button class="chip" data-go="punch" id="stampChip">☕ 0</button><button class="chip acct"><span class="dot"></span><span class="acctName">Sign in</span></button></div>
+    </div>
+    <div class="scroll" style="margin-top:10px">
+      <button class="special" id="specialCard">
+        <div style="font-size:30px">⭐</div>
+        <div style="flex:1;min-width:0"><div class="tag">TODAY'S SPECIAL</div><b class="f" id="spName" style="font-size:16px">Loading…</b><div class="muted" id="spSub" style="font-size:12px"></div></div>
+        <div class="stars" id="spStars"></div>
+      </button>
+      <div class="row" style="margin:10px 0 0"><button class="btn alt" id="surprise" style="padding:11px;font-size:15px">🎲 Surprise me</button></div>
+      <div class="tabs" id="menuTabs"><button class="on" data-t="season" id="seasonTab">Seasonal</button><button data-t="liquid">Teas &amp; Juice</button><button data-t="blended">Blended ❄</button></div>
+      <div class="board" id="menuBoard"></div>
+      <div style="height:16px"></div>
+    </div>
+  </section>
+
+  <!-- TICKET -->
+  <section class="screen" id="ticket">
+    <div class="top"><button class="chip" data-go="menu">← Menu</button><span class="muted f" style="font-size:14px">Your order</span></div>
+    <div class="scroll">
+      <div class="ticket">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+          <div><h2 id="tkName">Drink</h2><div class="muted" id="tkNote" style="font-size:13px"></div></div>
+          <div class="stars" id="tkStars" style="font-size:18px"></div>
+        </div>
+        <div class="sec" id="iceSec"><label>Ice</label><div class="seg" id="iceSeg"></div></div>
+        <div class="sec"><label><span>Add-ons</span><span id="topCount">0 / 2</span></label><div class="tops" id="topsGrid"></div></div>
+        <div class="sec"><label>What you're in for</label><div class="mechs" id="tkMechs"></div></div>
+        <div class="sec" id="tkBest" style="font-size:13px;color:var(--muted)"></div>
+      </div>
+      <div style="height:16px"></div>
+    </div>
+    <button class="btn" id="orderUp">Order up!</button>
+  </section>
+
+  <!-- MIC -->
   <section class="screen" id="cal">
-    <div class="top"><button class="chip" data-back>← Back</button><span></span></div>
+    <div class="top"><button class="chip" data-go="ticket">← Order</button><span></span></div>
     <div class="center">
       <div class="ring" id="calRing">🎤</div>
       <h2 id="calTitle">Mic check</h2>
-      <div class="note" id="calNote">We listen for your slurp. Keep the phone close to the straw. First, stay quiet for a moment so we can hear the room.</div>
+      <div class="note" id="calNote"></div>
       <div class="err" id="calErr"></div>
-      <button class="btn" id="calGo">Allow mic &amp; calibrate</button>
+      <button class="btn" id="calGo" style="max-width:320px">Allow mic &amp; calibrate</button>
       <button class="link" id="practiceGo" style="display:none">Practice without mic (hold to slurp, not posted)</button>
     </div>
   </section>
 
   <!-- COUNTDOWN -->
   <section class="screen" id="count">
-    <div class="center"><div class="ring" id="countN">3</div><div class="note" id="countNote">Get your lips on the straw…</div></div>
+    <div class="center"><div class="note f" style="font-size:16px" id="countOrder"></div><div class="ring" id="countN">3</div><div class="note" id="countNote"></div></div>
   </section>
 
   <!-- PLAY -->
   <section class="screen" id="play">
     <div id="practiceTag">PRACTICE</div>
-    <div class="hud">
-      <div id="timer">0.00</div>
-      <div id="left"><small>LEFT</small><span id="leftMl">0</span> ml</div>
-    </div>
+    <div class="hud"><div id="timer">0.00</div><div id="left"></div></div>
+    <div id="playOrder"></div>
     <canvas id="cv"></canvas>
-    <div id="holdHint">Hold anywhere on the cup to slurp</div>
+    <div id="hint"></div>
     <div class="meters">
-      <div class="meter"><label><span>SLURP POWER</span><span id="volPct">0%</span></label><div class="bar"><i id="volBar"></i></div></div>
+      <div class="meter"><label><span>SLURP</span><span id="volTxt"></span></label><div class="bar"><i id="volBar"></i></div></div>
       <div class="meter"><label><span>BREATH</span><span id="brTxt"></span></label><div class="bar"><i id="brBar"></i></div></div>
-      <button class="btn alt" id="quit" style="padding:10px;font-size:14px">Quit</button>
+      <div class="meter" id="mtWrap"><label><span id="mtName">BURP</span><span id="mtTxt"></span></label><div class="bar"><i id="mtBar"></i></div></div>
+      <div class="row">
+        <button class="btn green" id="actBtn" style="display:none">💨 Blow</button>
+        <button class="btn" id="chewBtn" style="display:none">Chew <span id="mouthPips"></span></button>
+        <button class="btn alt" id="quit" style="padding:11px;font-size:14px;flex:1">Quit</button>
+      </div>
     </div>
-    <div id="banner">GASP!</div>
+    <div id="banner"></div>
   </section>
 
-  <!-- RESULTS -->
-  <section class="screen" id="results">
-    <div class="center" style="justify-content:flex-start;padding-top:20px;gap:6px">
-      <div class="note" id="resDrink">ICE WATER</div>
-      <div class="big" id="resTime">0.00s</div>
-      <div id="resBadge"></div>
+  <!-- RECEIPT -->
+  <section class="screen" id="receipt">
+    <div class="scroll" style="margin-top:6px">
+      <div class="receipt">
+        <div class="f" style="text-align:center;font-size:18px">THE BOBA SHOP</div>
+        <div class="muted" style="text-align:center;font-size:12px" id="rcNo"></div>
+        <hr>
+        <div id="rcLines"></div>
+        <hr>
+        <div id="rcTime">0.00s</div>
+        <div id="rcBadge" style="text-align:center;min-height:6px"></div>
+        <hr>
+        <div id="rcStats"></div>
+        <hr>
+        <div id="rcPost"></div>
+        <div id="rcStamp" style="text-align:center;margin-top:10px"></div>
+      </div>
     </div>
-    <div id="postBox"></div>
-    <div id="resStats"></div>
-    <div style="flex:1"></div>
-    <div class="row" style="margin-top:14px">
-      <button class="btn alt" id="toMenu">Menu</button>
-      <button class="btn" id="again">Go again</button>
+    <div class="row" style="margin-top:12px"><button class="btn alt" id="rcNew">New order</button><button class="btn" id="rcAgain">Same again</button></div>
+  </section>
+
+  <!-- BOARDS -->
+  <section class="screen" id="boards">
+    <div class="top"><button class="chip" data-back>← Back</button><h3>Leaderboards</h3><span style="width:60px"></span></div>
+    <div class="tabs scrolly" id="boardTabs">
+      <button class="on" data-b="daily">⭐ Daily</button><button data-b="season" id="seasonBoardTab">Seasonal</button><button data-b="tea">Teas</button><button data-b="tea_clog">Teas + Pearls</button>
+      <button data-b="blended">Blended</button><button data-b="blended_clog">Blended + Pearls</button><button data-b="mine">My bests</button>
+    </div>
+    <div class="muted" id="boardSub" style="font-size:12px;margin:-4px 0 6px"></div>
+    <div class="scroll" id="boardList"></div>
+  </section>
+
+  <!-- PUNCH CARD -->
+  <section class="screen" id="punch">
+    <div class="top"><button class="chip" data-back>← Back</button><h3>Punch card</h3><span style="width:60px"></span></div>
+    <div class="scroll">
+      <div class="punch">
+        <div style="display:flex;justify-content:space-between;align-items:baseline"><b class="f" style="font-size:18px">Loyalty card</b><span class="muted" id="punchTotal"></span></div>
+        <div class="holes" id="holes"></div>
+        <div class="note" style="margin-top:10px;max-width:none">Every finished order earns a stamp. Stamps unlock straws and lid prints. Practice runs don't count.</div>
+      </div>
+      <h3 style="margin:18px 0 4px">Straws</h3>
+      <div class="tops" id="strawPick"></div>
+      <h3 style="margin:18px 0 4px">Lid prints</h3>
+      <div class="tops" id="lidPick"></div>
+      <div class="note" id="punchGuest" style="margin-top:12px;max-width:none"></div>
     </div>
   </section>
 
-  <!-- BOARD -->
-  <section class="screen" id="board">
-    <div class="top"><button class="chip" data-back>← Back</button><span class="chip" id="boardDrink" style="cursor:default">Ice Water</span></div>
-    <div class="tabs"><button class="on" data-tab="online">Online</button><button data-tab="local">This device</button></div>
-    <div id="boardList"></div>
-  </section>
-
-  <!-- SIGN IN SHEET -->
+  <!-- SIGN IN -->
   <div id="sheet">
     <div class="panel">
       <h2 id="shTitle">Sign in with WW</h2>
-      <div class="note" style="max-width:none" id="shNote">Same WW account as your other games.</div>
+      <div class="note" style="max-width:none">Same WW account as your other games.</div>
       <input id="shName" placeholder="Name" maxlength="16" autocomplete="username" autocapitalize="off">
       <input id="shPin" placeholder="4-digit PIN" maxlength="4" inputmode="numeric" type="password" autocomplete="current-password">
       <div class="err" id="shErr"></div>
@@ -193,29 +344,94 @@ const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 
 // Tuning knobs
 const T = {
-  maxFlow: 45,        // ml/s at full slurp power
-  flowCurve: 1.3,     // >1 rewards going louder
-  gateDb: 6,          // dB above room noise before a slurp counts
-  rangeDb: 30,        // dB above gate to reach full power
-  breathDrain: 10,    // per second while slurping (base)
-  breathDrainPow: 14, // extra per second at full power
-  breathRegen: 30,    // per second while resting
-  gaspTime: 1.2,      // seconds locked out when breath hits 0
+  // slurping
+  maxFlow: 45, flowCurve: 1.3, gateDb: 6, rangeDb: 30,
+  breathDrain: 10, breathDrainPow: 14, breathRegen: 30, gaspTime: 1.2,
+  // slurp filter
+  hiRatioMin: 0.5, flatnessMin: 0.12, holdMs: 160, graceMs: 140,
+  // burp (liquid drinks)
+  burpRate: 22, burpStreak: 3, burpSettle: 6, burpPause: 0.3,
+  burpRatioMax: 0.2, burpLoudMin: 0.25, burpHoldMs: 250,
+  // brain freeze (blended)
+  freezeRate: 20, freezeStreak: 3, freezeSettle: 7, freezeLock: 2.5,
+  // add-ons
+  mouth: 3, pickRate: 4, travel: 0.35,
+  clog: [0.02, 0.1, 0.4, 0.8],      // clog chance per boba/mochi with 0/1/2/3+ layers above the tip
+  blowLoud: 0.55, blowMs: 350,
+  // volumes
+  liquidMl: 360, blendedMl: 330, iceMl: 12,
 };
 
-// Drink roster: only ready drinks are playable. Each future drink adds its own mechanic.
-const DRINKS = [
-  { id:"water_ice", name:"Ice Water", ico:"🧊", ready:true, blurb:"Ice melts as you go — slow sippers drink more.",
-    water:400, ice:8, iceMl:12, meltMin:25, meltMax:60, color:["#8fe3ff","#2a9fe0"] },
-  { id:"soda",     name:"Soda",     ico:"🥤", ready:false, blurb:"Fizz builds up — you'll need to burp." },
-  { id:"boba",     name:"Boba",     ico:"🧋", ready:false, blurb:"Pearls clog the straw — tap to chew." },
-  { id:"slurpee",  name:"Slurpee",  ico:"🍧", ready:false, blurb:"Go too hard and brain freeze hits." },
-  { id:"smoothie", name:"Smoothie", ico:"🥭", ready:false, blurb:"Thick, cold, brain-freeze prone." },
+/* ============ THE MENU ============ */
+const BASES = [
+  { id:"honey_milk_tea", name:"Honey Milk Tea", type:"liquid", color:["#f3d6ad","#c9965f"], flow:.85, burp:.6, note:"Smooth & sweet · sips a little slower" },
+  { id:"oolong_milk_tea", name:"Oolong Milk Tea", type:"liquid", color:["#e3bf96","#9e6c3a"], flow:.85, burp:.6, note:"Toasty · sips a little slower" },
+  { id:"peach_tea", name:"Peach Tea", type:"liquid", color:["#ffcfa6","#f08a5d"], flow:1, burp:1, note:"Light · burps build faster" },
+  { id:"juice", name:"Juice", type:"liquid", color:["#ffe07a","#ff9f43"], flow:1.05, burp:1.1, note:"Thin & quick · burps build fastest" },
+  { id:"strawberry_matcha_latte", name:"Strawberry Matcha Latte", type:"liquid", color:["#a9cf86","#f29bb2"], layered:true, flow:.8, burp:.6, note:"Layered · thickest of the teas" },
+  { id:"strawberry_tornado", name:"Strawberry Tornado", type:"blended", color:["#ffc2d1","#e8567c"], swirl:"#fff7f9", flow:.7, freeze:1, note:"Swirled · brain freeze" },
+  { id:"mango_tornado", name:"Mango Tornado", type:"blended", color:["#ffe08e","#f39a26"], swirl:"#fff8e6", flow:.7, freeze:1, note:"Swirled · brain freeze" },
+  { id:"taro_ice_milk", name:"Taro Ice Milk", type:"blended", color:["#ddc8f3","#a184d6"], flow:.7, freeze:1.15, note:"Creamy · freezes faster" },
+  { id:"ube_matcha", name:"Blended Ube Matcha", type:"blended", color:["#a7cf86","#8a68cf"], layered:true, flow:.65, freeze:1.25, note:"Thickest · freezes fastest" },
+  // Seasonal (shown only in their season)
+  { id:"pumpkin_spice_milk_tea", season:"fall", name:"Pumpkin Spice Milk Tea", type:"liquid", color:["#f6c68e","#c97a3a"], deco:"cinnamon", flow:.85, burp:.6, note:"Cozy & spiced · sips a little slower" },
+  { id:"pumpkin_tornado", season:"fall", name:"Pumpkin Tornado", type:"blended", color:["#ffc887","#e8792b"], swirl:"#fff4e2", flow:.7, freeze:1, note:"Swirled · brain freeze" },
+  { id:"peppermint_mocha_milk_tea", season:"winter", name:"Peppermint Mocha Milk Tea", type:"liquid", color:["#c79a7c","#6e4330"], deco:"candy", flow:.8, burp:.6, note:"Chocolatey · candy cane bits" },
+  { id:"brown_sugar_boba_milk", season:"winter", name:"Brown Sugar Boba Milk", type:"liquid", color:["#fbf1e3","#e9d7bf"], deco:"tiger", flow:.8, burp:.6, note:"Tiger stripes · sips slower" },
+  { id:"sakura_strawberry_latte", season:"spring", name:"Sakura Strawberry Latte", type:"liquid", color:["#fde3ea","#f39ab4"], layered:true, deco:"petals", flow:.82, burp:.6, note:"Floral & layered" },
+  { id:"honey_lemon_tea", season:"spring", name:"Honey Lemon Tea", type:"liquid", color:["#fff0a8","#f7c948"], deco:"lemon", flow:1, burp:1, note:"Bright · burps build faster" },
+  { id:"watermelon_slush", season:"summer", name:"Watermelon Slush", type:"blended", color:["#ffb0b8","#ef4f63"], deco:"seeds", flow:.75, freeze:1.1, note:"Icy · freezes faster" },
+  { id:"lychee_fruit_tea", season:"summer", name:"Lychee Fruit Tea", type:"liquid", color:["#fff7f2","#f6d6d2"], deco:"lychee", flow:1, burp:1, note:"Light · burps build faster" },
 ];
-const drinkById = id => DRINKS.find(d => d.id === id);
+// Seasons (Pacific time): Sep-Nov fall, Dec-Feb winter, Mar-May spring, Jun-Aug summer
+const SEASONS = {
+  fall:   { name:"Fall",   icon:"🍂", fx:["🍂","🍁","🍂"], awning:"#f0883a", tag:"Pumpkin season is here 🎃" },
+  winter: { name:"Winter", icon:"❄️", fx:["❄️","❅","❆"], awning:"#7fb3e3", tag:"The cozy winter menu is here ☃️" },
+  spring: { name:"Spring", icon:"🌸", fx:["🌸","🌸","💮"], awning:"#ff9cbd", tag:"Cherry blossom season 🌸" },
+  summer: { name:"Summer", icon:"☀️", fx:["✨","🫧","✨"], awning:"#ffc23d", tag:"Summer sips are here ☀️" },
+};
+const SEASON = (() => {
+  const [y, m] = new Date().toLocaleDateString("en-CA", { timeZone:"America/Los_Angeles" }).split("-").map(Number);
+  const id = m >= 3 && m <= 5 ? "spring" : m >= 6 && m <= 8 ? "summer" : m >= 9 && m <= 11 ? "fall" : "winter";
+  return { id, year: id === "winter" && m <= 2 ? y - 1 : y, ...SEASONS[id] };
+})();
+const inSeason = b => !b.season || b.season === SEASON.id;
+const TOPS = [
+  { id:"boba", name:"Boba Pearls", clog:true, chews:2, size:1, count:26, shape:"ball", color:"#2a160c", sub:"Hard · can clog" },
+  { id:"mini_pearls", name:"Mini Pearls", chews:1, size:.6, count:40, shape:"ball", color:"#4a2a18", sub:"Easy · chew" },
+  { id:"jelly", name:"Jelly", chews:1, size:.9, count:22, shape:"cube", color:"rainbow", sub:"Easy · chew" },
+  { id:"grass_jelly", name:"Grass Jelly", chews:1, size:.9, count:22, shape:"cube", color:"#2f2c25", sub:"Easy · chew" },
+  { id:"mochi", name:"Mochi", clog:true, chews:3, size:1.25, count:14, shape:"mochi", color:"#fff3f3", sub:"Hard · can clog" },
+  { id:"cold_foam", name:"Cold Foam", visual:true, foam:"#f6e4c8", sub:"Just looks great" },
+  { id:"pumpkin_cold_foam", name:"Pumpkin Cream Foam", visual:true, foam:"#ffdcb0", season:"fall", sub:"🍂 Seasonal · looks great" },
+];
+const topInSeason = t => !t.season || t.season === SEASON.id;
+const ICE = { none:0, less:4, regular:8, extra:12 };
+const ICE_NAMES = { none:"No ice", less:"Less ice", regular:"Regular ice", extra:"Extra ice" };
+// Punch card rewards (cosmetic only)
+const STRAWS = [
+  { id:"pink", name:"Pink", at:0, fill:"rgba(255,143,171,.45)", edge:"rgba(220,80,115,.9)" },
+  { id:"mint", name:"Mint", at:3, fill:"rgba(143,214,180,.5)", edge:"rgba(60,150,110,.9)" },
+  { id:"taro", name:"Taro", at:6, fill:"rgba(181,154,217,.5)", edge:"rgba(120,90,170,.9)" },
+  { id:"clear", name:"Clear", at:10, fill:"rgba(255,255,255,.35)", edge:"rgba(74,47,39,.55)" },
+  { id:"rainbow", name:"Rainbow", at:15, rainbow:true, edge:"rgba(74,47,39,.5)" },
+  { id:"gold", name:"Gold", at:25, fill:"rgba(255,200,80,.6)", edge:"rgba(190,140,20,.95)" },
+];
+const LIDS = [
+  { id:"dots", name:"Polka dots", at:0, mark:"•" },
+  { id:"hearts", name:"Hearts", at:5, mark:"♥" },
+  { id:"stars", name:"Stars", at:12, mark:"★" },
+  { id:"boba", name:"Boba", at:20, mark:"●" },
+  { id:"season", name:"Seasonal print", at:30, mark:null },
+];
+const REWARDS = [...STRAWS.filter(s => s.at).map(s => ({ at:s.at, what:s.name + " straw", icon:"🥤" })), ...LIDS.filter(l => l.at).map(l => ({ at:l.at, what:l.name + " lid", icon:"🎨" }))].sort((a, b) => a.at - b.at);
+const BOARDS = { daily:"Today's Special", season:`${SEASON.name} ${SEASON.year} seasonal drinks`, tea:"Teas & Juice", tea_clog:"Teas + Pearls/Mochi", blended:"Blended", blended_clog:"Blended + Pearls/Mochi" };
+const base = id => BASES.find(b => b.id === id);
+const topping = id => TOPS.find(t => t.id === id);
 
 /* ============ HELPERS ============ */
 const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
 const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
 const fmt = ms => (ms/1000).toFixed(2);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -224,29 +440,70 @@ const store = {
   set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
   del(k){ try { localStorage.removeItem(k); } catch(e){} },
 };
-function show(id){ document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === id)); }
-
 async function rpc(fn, args){
-  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
-    method:"POST",
-    headers:{ apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, "Content-Type":"application/json" },
-    body: JSON.stringify(args)
-  });
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, { method:"POST",
+    headers:{ apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, "Content-Type":"application/json" }, body: JSON.stringify(args || {}) });
   const j = await r.json().catch(() => null);
-  if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Couldn't reach the server.");
+  if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Couldn't reach the shop server.");
   return j;
 }
 
-/* ============ WW ACCOUNT ============ */
-let ww = store.get("ww_session"); // {name, token}
-function renderAcct(){
-  $("#acct").classList.toggle("in", !!ww);
-  $("#acctName").textContent = ww ? ww.name : "Sign in";
+/* ============ ORDERS ============ */
+function normOrder(o){
+  const b = base(o.base), tops = [...new Set((o.tops || []).filter(topping))].slice(0, 2).sort();
+  return { base: b.id, tops, ice: b.type === "blended" ? "na" : (ICE[o.ice] != null ? o.ice : "regular") };
 }
-async function resume(){
-  if (!ww) return;
-  try { const r = await rpc("ww_resume", { p_name: ww.name, p_token: ww.token }); ww.name = r.name || ww.name; store.set("ww_session", ww); }
-  catch(e){ if (/sign in/i.test(e.message)) { ww = null; store.del("ww_session"); } }
+const orderKey = o => `${o.base}|${o.tops.length ? o.tops.join("+") : "none"}|${o.ice}`;
+const parseKey = k => { const [b, t, i] = k.split("|"); return { base:b, tops: t === "none" ? [] : t.split("+"), ice:i }; };
+const hasClog = o => o.tops.some(t => topping(t).clog);
+const category = o => (base(o.base).type === "blended" ? "blended" : "tea") + (hasClog(o) ? "_clog" : "");
+function orderName(o, short){
+  const b = base(o.base); let s = b.name;
+  if (o.tops.length) s += " + " + o.tops.map(t => topping(t).name).join(", ");
+  if (!short && b.type === "liquid") s += " · " + ICE_NAMES[o.ice];
+  return s;
+}
+function stars(o){
+  const b = base(o.base); let s = b.type === "blended" ? 2 : 1;
+  if (b.freeze > 1.1) s += .5;
+  for (const t of o.tops) { const tp = topping(t); if (tp.clog) s += tp.id === "mochi" ? 1.5 : 1.25; else if (!tp.visual) s += .5; }
+  if (o.ice === "extra") s += .25;
+  return clamp(Math.round(s), 1, 5);
+}
+const starHtml = n => "★".repeat(n) + `<span class="off">${"★".repeat(5 - n)}</span>`;
+function mechanics(o){
+  const b = base(o.base), m = ["🫧 Breath"];
+  m.push(b.type === "blended" ? "🧠 Brain freeze" : "😮‍💨 Burps");
+  if (b.type === "liquid" && ICE[o.ice]) m.push("🧊 Ice melts in");
+  if (o.tops.some(t => !topping(t).visual)) m.push("😋 Chewing");
+  if (hasClog(o)) m.push("🚫 Clogs · blow");
+  if (o.tops.some(t => topping(t).foam)) m.push("☁️ Cold foam");
+  return m;
+}
+
+/* ============ WW ACCOUNT + PROGRESS ============ */
+let ww = store.get("ww_session"); // {name, token}
+let me = null;                    // {stamps, bests} from server
+const localStamps = () => store.get("slurp_stamps") || 0;
+const localBests = () => store.get("slurp_bests") || {};
+const stampsNow = () => Math.max(localStamps(), me ? me.stamps : 0);
+const isUnlockedTop = t => topInSeason(t);
+let style = Object.assign({ straw:"pink", lid:"dots" }, store.get("slurp_style") || {});
+const strawStyle = () => { const s = STRAWS.find(x => x.id === style.straw); return s && stampsNow() >= s.at ? s : STRAWS[0]; };
+const lidStyle = () => { const l = LIDS.find(x => x.id === style.lid); return l && stampsNow() >= l.at ? l : LIDS[0]; };
+function bestFor(key){
+  const a = localBests()[key], b = me && me.bests ? me.bests[key] : null;
+  return a && b ? Math.min(a, b) : (a || b || null);
+}
+function renderAcct(){
+  $$(".acct").forEach(el => el.classList.toggle("in", !!ww));
+  $$(".acctName").forEach(el => el.textContent = ww ? ww.name : "Sign in");
+  $("#stampChip").textContent = "☕ " + stampsNow();
+}
+async function refreshMe(){
+  if (!ww) { me = null; renderAcct(); return; }
+  try { me = await rpc("slurp_me", { p_name: ww.name, p_token: ww.token }); }
+  catch(e){ if (/sign in/i.test(e.message)) { ww = null; me = null; store.del("ww_session"); } }
   renderAcct();
 }
 let sheetMode = "login", sheetDone = null;
@@ -260,9 +517,8 @@ function paintSheet(){
   $("#shTitle").textContent = c ? "Create a WW account" : "Sign in with WW";
   $("#shGo").textContent = c ? "Create account" : "Sign in";
   $("#shSwap").textContent = c ? "Have an account? Sign in" : "New here? Create account";
-  $("#shPin").autocomplete = c ? "new-password" : "current-password";
 }
-$("#shSwap").onclick = () => { sheetMode = sheetMode === "login" ? "create" : "login"; paintSheet(); $("#shErr").textContent=""; };
+$("#shSwap").onclick = () => { sheetMode = sheetMode === "login" ? "create" : "login"; paintSheet(); $("#shErr").textContent = ""; };
 $("#shCancel").onclick = () => { $("#sheet").classList.remove("on"); sheetDone = null; };
 $("#shGo").onclick = async () => {
   const name = $("#shName").value.trim(), pin = $("#shPin").value.trim();
@@ -272,55 +528,155 @@ $("#shGo").onclick = async () => {
   try {
     const r = await rpc(sheetMode === "create" ? "ww_create_account" : "ww_login", { p_name:name, p_pin:pin });
     if (r && r.ok === false) throw new Error(r.error || "Couldn't sign in.");
-    ww = { name: r.name || name, token: r.token }; store.set("ww_session", ww); renderAcct();
-    $("#sheet").classList.remove("on");
+    ww = { name: r.name || name, token: r.token }; store.set("ww_session", ww);
+    $("#sheet").classList.remove("on"); await refreshMe();
     const cb = sheetDone; sheetDone = null; if (cb) cb();
   } catch(e){ $("#shErr").textContent = e.message; }
   $("#shGo").disabled = false;
 };
-$("#acct").onclick = () => {
+$$(".acct").forEach(b => b.onclick = () => {
   if (!ww) return openSheet();
   if (confirm(`Signed in as ${ww.name}. Sign out?`)) {
-    rpc("ww_logout", { p_name: ww.name, p_token: ww.token }).catch(()=>{});
-    ww = null; store.del("ww_session"); renderAcct();
+    rpc("ww_logout", { p_name: ww.name, p_token: ww.token }).catch(() => {});
+    ww = null; me = null; store.del("ww_session"); renderAcct();
   }
-};
+});
+
+/* ============ NAVIGATION ============ */
+let screen = "splash", prevScreen = "splash";
+function show(id){
+  if (id !== screen) prevScreen = screen;
+  screen = id;
+  $$(".screen").forEach(s => s.classList.toggle("on", s.id === id));
+  music.onScreen(id);
+  $("#fx").classList.toggle("on", id === "splash" || id === "menu");
+  if (id === "menu") renderMenu();
+  if (id === "boards") paintBoard();
+  if (id === "punch") renderPunch();
+}
+$$("[data-go]").forEach(b => b.onclick = () => show(b.dataset.go));
+$$("[data-back]").forEach(b => b.onclick = () => show(["boards","punch"].includes(prevScreen) ? "splash" : prevScreen));
+$("#goOrder").onclick = () => show("menu");
+
+/* ============ DAILY SPECIAL ============ */
+let daily = null; // {order, key, day}
+function localDaily(){
+  const d = new Date().toLocaleDateString("en-CA", { timeZone:"America/Los_Angeles" });
+  let h = 0; for (const c of d) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const rnd = () => (h = (h * 1103515245 + 12345) >>> 0) / 4294967296;
+  const b = BASES[Math.floor(rnd() * BASES.length)].id, chewy = TOPS.filter(t => !t.visual).map(t => t.id), tops = [];
+  for (let i = Math.floor(rnd() * 3); i > 0; i--) { const p = chewy[Math.floor(rnd() * chewy.length)]; if (!tops.includes(p)) tops.push(p); }
+  return normOrder({ base:b, tops, ice:["less","regular","extra"][Math.floor(rnd() * 3)] });
+}
+async function loadDaily(){
+  try { const r = await rpc("slurp_daily_special"); daily = { order: normOrder(r), online: true }; }
+  catch(e){ daily = { order: localDaily(), online: false }; }
+  daily.key = orderKey(daily.order);
+  if (screen === "menu") renderSpecial();
+}
+function renderSpecial(){
+  if (!daily) return;
+  $("#spName").textContent = orderName(daily.order, true);
+  $("#spSub").textContent = (base(daily.order.base).type === "liquid" ? ICE_NAMES[daily.order.ice] + " · " : "") + "Same order for everyone today";
+  $("#spStars").innerHTML = starHtml(stars(daily.order));
+}
+$("#specialCard").onclick = () => { if (daily) openTicket(daily.order, true); };
 
 /* ============ MENU ============ */
-let drink = DRINKS[0];
-function localBoard(id){ return store.get("slurp_local_" + id) || []; }
-function renderMenu(){
-  $("#drinkCards").innerHTML = DRINKS.map(d => {
-    const best = d.ready ? localBoard(d.id)[0] : null;
-    return `<button class="card ${d.ready ? "" : "locked"}" data-d="${d.id}">
-      <div class="ico">${d.ico}</div>
-      <div><b>${esc(d.name)}</b><span>${esc(d.blurb)}</span></div>
-      ${d.ready ? (best ? `<div class="pb">${fmt(best.ms)}s</div>` : `<div class="tag">PLAY</div>`) : `<div class="tag">SOON</div>`}
-    </button>`;
-  }).join("");
-  document.querySelectorAll("#drinkCards .card").forEach(el => el.onclick = () => {
-    const d = drinkById(el.dataset.d); if (!d.ready) return;
-    drink = d; startFlow();
-  });
+let menuTab = "season";
+$$("#menuTabs button").forEach(b => b.onclick = () => { menuTab = b.dataset.t; $$("#menuTabs button").forEach(x => x.classList.toggle("on", x === b)); renderMenu(); });
+function cupSwatch(b){
+  const bg = b.layered ? `linear-gradient(${b.color[0]} 45%, ${b.color[1]} 55%)` : `linear-gradient(${b.color[0]}, ${b.color[1]})`;
+  return `<span class="cup" style="background:${bg}"></span>`;
 }
-document.querySelectorAll("[data-back]").forEach(b => b.onclick = () => { renderMenu(); show("menu"); });
-$("#toBoard").onclick = () => openBoard(drink.id);
+function renderMenu(){
+  renderAcct(); renderSpecial();
+  const list = menuTab === "season" ? BASES.filter(b => b.season === SEASON.id) : BASES.filter(b => b.type === menuTab && !b.season);
+  const head = menuTab === "season" ? `${SEASON.icon} ${SEASON.name} menu <span style="font-size:11px;opacity:.7">· limited time</span>` : menuTab === "blended" ? "Smoothies &amp; Blended" : "Teas &amp; Juice";
+  $("#menuBoard").innerHTML = `<h3>${head}</h3>` + list.map(b => {
+    const pb = Math.min(...Object.entries({ ...localBests(), ...(me ? me.bests : {}) }).filter(([k]) => k.startsWith(b.id + "|")).map(([, v]) => v), Infinity);
+    return `<button class="mi" data-b="${b.id}">${cupSwatch(b)}
+      <div><b>${esc(b.name)}</b><small>${esc(b.note)}${b.type === "blended" ? " ❄" : ""}</small></div>
+      <div class="r">${pb < Infinity ? "Best " + fmt(pb) + "s" : ""}</div></button>`;
+  }).join("");
+  $$("#menuBoard .mi").forEach(el => el.onclick = () => openTicket({ base: el.dataset.b, tops: [], ice: "regular" }));
+}
+$("#surprise").onclick = () => {
+  const bases = BASES.filter(inSeason);
+  const tops = TOPS.filter(isUnlockedTop).map(t => t.id), pick = [];
+  for (let i = Math.floor(Math.random() * 3); i > 0; i--) { const p = tops[Math.floor(Math.random() * tops.length)]; if (!pick.includes(p)) pick.push(p); }
+  openTicket({ base: bases[Math.floor(Math.random() * bases.length)].id, tops: pick, ice: ["less","regular","extra"][Math.floor(Math.random() * 3)] });
+};
+let toastT = 0;
+function flashToast(msg){
+  let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:absolute;left:16px;right:16px;bottom:90px;background:var(--ink);color:#fff;padding:12px 14px;border-radius:14px;font-weight:800;font-size:14px;text-align:center;z-index:6;transition:opacity .2s"; $("#app").appendChild(t); }
+  t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 2200);
+}
+
+/* ============ TICKET ============ */
+let order = null, orderIsDaily = false;
+function openTicket(o, isDaily){
+  order = normOrder(o); orderIsDaily = !!isDaily; renderTicket(); show("ticket");
+}
+function renderTicket(){
+  const b = base(order.base);
+  $("#tkName").textContent = b.name + (orderIsDaily ? " ⭐" : "");
+  $("#tkNote").textContent = orderIsDaily ? "Today's Special: fixed order, its own leaderboard" : b.note;
+  $("#tkStars").innerHTML = starHtml(stars(order));
+  $("#iceSec").style.display = b.type === "liquid" ? "" : "none";
+  $("#iceSeg").innerHTML = Object.keys(ICE).map(k => `<button data-i="${k}" class="${order.ice === k ? "on" : ""}">${k[0].toUpperCase() + k.slice(1)}</button>`).join("");
+  $$("#iceSeg button").forEach(el => el.onclick = () => { if (orderIsDaily) return lockedDaily(); order.ice = el.dataset.i; renderTicket(); });
+  $("#topCount").textContent = `${order.tops.length} / 2`;
+  $("#topsGrid").innerHTML = TOPS.filter(t => topInSeason(t) || order.tops.includes(t.id)).map(t => {
+    const on = order.tops.includes(t.id);
+    return `<button class="top-b ${on ? "on" : ""}" data-t="${t.id}"><i style="${topSwatch(t)}"></i>
+      <div><b>${esc(t.name)}</b><small>${esc(t.sub)}</small></div></button>`;
+  }).join("");
+  $$("#topsGrid .top-b").forEach(el => el.onclick = () => {
+    if (orderIsDaily) return lockedDaily();
+    const t = topping(el.dataset.t);
+    if (order.tops.includes(t.id)) order.tops = order.tops.filter(x => x !== t.id);
+    else if (order.tops.length < 2) order.tops = [...order.tops, t.id].sort();
+    else return flashToast("Up to 2 add-ons per drink.");
+    renderTicket();
+  });
+  $("#tkMechs").innerHTML = mechanics(order).map(m => `<span class="badge">${m}</span>`).join("");
+  const pb = bestFor(orderKey(order));
+  $("#tkBest").textContent = pb ? `Your best on this exact order: ${fmt(pb)}s` : "First time ordering this. Good luck!";
+}
+const lockedDaily = () => flashToast("Today's Special can't be changed. Order from the menu to customize.");
+function topSwatch(t){
+  if (t.visual) return `background:linear-gradient(#fff,${t.foam});border:2px solid #ead7c3`;
+  if (t.color === "rainbow") return "background:conic-gradient(#ff9fb6,#ffd97a,#a8e08a,#9fd2ff,#ff9fb6);border-radius:6px";
+  if (t.shape === "cube") return `background:${t.color};border-radius:6px`;
+  if (t.shape === "mochi") return `background:${t.color};border:2px solid #f3c9d2`;
+  return `background:${t.color};transform:scale(${t.size})`;
+}
+$("#orderUp").onclick = () => startFlow();
 
 /* ============ MIC ============ */
-let ac = null, an = null, buf = null, floorDb = -60, micOk = false, practice = false;
+let ac = null, an = null, buf = null, fbuf = null, floorDb = -60, micOk = false, practice = false;
 async function initMic(){
   if (micOk) { if (ac.state !== "running") await ac.resume(); return; }
   const stream = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
-  ac = new (window.AudioContext || window.webkitAudioContext)();
-  await ac.resume();
+  ac = new (window.AudioContext || window.webkitAudioContext)(); await ac.resume();
   const src = ac.createMediaStreamSource(stream);
   an = ac.createAnalyser(); an.fftSize = 1024; an.smoothingTimeConstant = 0;
-  src.connect(an); buf = new Float32Array(an.fftSize); micOk = true;
+  src.connect(an); buf = new Float32Array(an.fftSize); fbuf = new Float32Array(an.frequencyBinCount); micOk = true;
 }
 function readDb(){
   an.getFloatTimeDomainData(buf);
-  let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i]*buf[i];
+  let s = 0; for (let i = 0; i < buf.length; i++) s += buf[i] * buf[i];
   return 20 * Math.log10(Math.sqrt(s / buf.length) + 1e-8);
+}
+// Slurps are hissy (energy up high, noise-like); voices, music, burps are low and tonal
+function spectrum(){
+  an.getFloatFrequencyData(fbuf);
+  const hz = ac.sampleRate / an.fftSize, bin = f => Math.min(fbuf.length - 1, Math.round(f / hz)), pow = i => Math.pow(10, fbuf[i] / 10);
+  let lo = 0, hi = 0; for (let i = bin(100); i <= bin(1000); i++) lo += pow(i); for (let i = bin(2000); i <= bin(10000); i++) hi += pow(i);
+  let n = 0, sl = 0, sum = 0; for (let i = bin(1000); i <= bin(8000); i++) { const p = pow(i) + 1e-20; sl += Math.log(p); sum += p; n++; }
+  const flat = Math.exp(sl / n) / (sum / n), ratio = hi / (lo + 1e-20);
+  return { ratio, flat, ok: ratio >= T.hiRatioMin && flat >= T.flatnessMin };
 }
 function calibrate(){
   return new Promise(res => {
@@ -330,8 +686,7 @@ function calibrate(){
       const p = (performance.now() - t0) / dur;
       $("#calRing").textContent = Math.max(1, Math.ceil((1 - p) * 3));
       if (p < 1) return requestAnimationFrame(tick);
-      samples.sort((a,b) => a-b);
-      res(samples[Math.floor(samples.length * 0.6)]); // ignore stray spikes
+      samples.sort((a,b) => a - b); res(samples[Math.floor(samples.length * .6)]);
     })();
   });
 }
@@ -339,266 +694,592 @@ function startFlow(){
   practice = false;
   $("#calErr").textContent = ""; $("#practiceGo").style.display = "none";
   $("#calRing").textContent = "🎤"; $("#calTitle").textContent = "Mic check";
-  $("#calNote").textContent = "We listen for your slurp. Keep the phone close to the straw. First, stay quiet for a moment so we can hear the room.";
+  $("#calNote").textContent = "We listen for your slurps (and burps). Keep the phone close to the straw. First, stay quiet for a moment so we can hear the room.";
   $("#calGo").style.display = ""; $("#calGo").disabled = false;
   show("cal");
 }
 $("#calGo").onclick = async () => {
   $("#calGo").disabled = true; $("#calErr").textContent = "";
   try { await initMic(); }
-  catch(e){
-    $("#calErr").textContent = "No mic access. Allow the microphone for this site and try again.";
-    $("#practiceGo").style.display = ""; $("#calGo").disabled = false; return;
-  }
+  catch(e){ $("#calErr").textContent = "No mic access. Allow the microphone for this site and try again."; $("#practiceGo").style.display = ""; $("#calGo").disabled = false; return; }
   $("#calTitle").textContent = "Shh…"; $("#calNote").textContent = "Listening to the room.";
-  const f = await calibrate();
-  floorDb = clamp(f, -80, -25);
+  const f = await calibrate(); floorDb = clamp(f, -80, -25);
   $("#calRing").textContent = "✓"; $("#calTitle").textContent = "Mic ready";
-  $("#calNote").textContent = f > -38 ? "It's loud in here — slurps will need to be louder to count." : "Nice and quiet.";
+  $("#calNote").textContent = f > -38 ? "It's loud in here. Slurps will need to be louder to count." : "Nice and quiet.";
   setTimeout(countdown, 700);
 };
 $("#practiceGo").onclick = () => { practice = true; countdown(); };
 
-/* ============ COUNTDOWN ============ */
 function countdown(){
   show("count"); let n = 3; $("#countN").textContent = n;
-  $("#countNote").textContent = practice ? "Hold the cup to slurp" : "Get your lips on the straw…";
+  $("#countOrder").textContent = "Order up: " + orderName(order, true);
+  $("#countNote").textContent = "When it's ready, tap the lid to stab your straw through. Drag to steer.";
   const iv = setInterval(() => {
     n--; if (n > 0) { $("#countN").textContent = n; return; }
-    clearInterval(iv); $("#countN").textContent = "GO"; setTimeout(startRun, 350);
+    clearInterval(iv); $("#countN").textContent = "🧋"; setTimeout(startRun, 350);
   }, 750);
 }
 
-/* ============ GAME ============ */
+/* ============ INPUT ============ */
+let slurpOnMs = 0, slurpOffMs = 0, slurpGate = false, heard = "";
+function readInput(dt){
+  S.burpNow = false; S.loud = 0;
+  if (practice) { heard = holding ? "slurp" : ""; return holding ? .85 : 0; }
+  const loud = clamp((readDb() - floorDb - T.gateDb) / T.rangeDb, 0, 1); // clamp = volume cap
+  S.loud = loud;
+  if (loud <= 0) { slurpOnMs = 0; slurpOffMs += dt * 1000; if (slurpOffMs > T.graceMs) slurpGate = false; heard = ""; return 0; }
+  const s = spectrum();
+  S.burpNow = s.ratio < T.burpRatioMax && loud >= T.burpLoudMin;
+  if (s.ok) { slurpOnMs += dt * 1000; slurpOffMs = 0; if (slurpOnMs >= T.holdMs) slurpGate = true; }
+  else { slurpOnMs = 0; slurpOffMs += dt * 1000; if (slurpOffMs > T.graceMs) slurpGate = false; }
+  heard = slurpGate ? "slurp" : (s.ok ? "" : "noise");
+  return slurpGate ? loud : 0;
+}
+
+/* ============ GAME ENGINE ============ */
 const cv = $("#cv"), g = cv.getContext("2d");
 let S = null, raf = 0, holding = false;
-function newState(){
-  const cubes = [];
-  for (let i = 0; i < drink.ice; i++) cubes.push({
-    ml: drink.iceMl, max: drink.iceMl,
-    rate: drink.iceMl / (drink.meltMin + Math.random() * (drink.meltMax - drink.meltMin)),
-    x: (i % 4) / 3 - 0.5 + (Math.random() - 0.5) * 0.12, row: Math.floor(i / 4), rot: Math.random() * 0.8 - 0.4, bob: Math.random() * 6.28
-  });
-  return { liquid: drink.water, cap: drink.water + drink.ice * drink.iceMl, cubes, t: 0, breath: 100, gasp: 0, power: 0,
-    gasps: 0, melted: 0, slurpTime: 0, powerSum: 0, peak: 0, bubbles: [], done: false };
+function resize(){
+  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d); g.setTransform(d, 0, 0, d, 0, 0);
 }
+function geom(){
+  const W = cv.clientWidth, H = cv.clientHeight;
+  const cupH = Math.min(H * .76, W * 1.1), topW = Math.min(W * .66, cupH * .78), botW = topW * .72;
+  const cx = W / 2, top = (H - cupH) / 2 + cupH * .1, bot = top + cupH;
+  return { W, H, cupH, topW, botW, cx, top, bot, r0: botW / 16, sw: Math.max(12, topW * .085), L: cupH * 1.3,
+    P: { x: cx, y: top }, xAt: (y, s) => { const k = (y - top) / cupH; return cx + s * (topW + (botW - topW) * k) / 2; } };
+}
+const JELLY = ["#ff9fb6","#ffd97a","#a8e08a","#9fd2ff","#ffb27a"];
 function startRun(){
-  S = newState(); show("play"); resize();
+  show("play"); resize();
+  const G = geom(), b = base(order.base), blended = b.type === "blended";
+  const chewy = order.tops.map(topping).filter(t => !t.visual), pieces = [];
+  for (const t of chewy) {
+    const n = Math.round(t.count * (chewy.length > 1 ? .6 : 1));
+    for (let i = 0; i < n; i++) pieces.push({ type: t.id, r: G.r0 * t.size, x: G.cx + (Math.random() - .5) * G.botW * .8,
+      y: G.bot - G.cupH * (.05 + Math.random() * .35), rot: Math.random() * 6.28, col: t.color === "rainbow" ? JELLY[i % JELLY.length] : t.color });
+  }
+  const cubes = [];
+  for (let i = 0, n = blended ? 0 : ICE[order.ice]; i < n; i++) cubes.push({ ml: T.iceMl, max: T.iceMl,
+    rate: T.iceMl / (25 + Math.random() * 35), x: (i % 4) / 3 - .5 + (Math.random() - .5) * .12, row: Math.floor(i / 4), rot: Math.random() * .8 - .4, bob: Math.random() * 6.28 });
+  const vol = blended ? T.blendedMl : T.liquidMl;
+  S = { G, b, blended, pieces, cubes, liquid: vol, cap: vol + cubes.length * T.iceMl, t: 0, popped: false, popT: 0,
+    tip: { x: G.cx, y: G.top - 10 }, breath: 100, gasp: 0, power: 0, flow: 0,
+    meter: 0, streak: 0, pauseT: 0, needBurp: false, burpMs: 0, burps: 0, burpWait: 0, frozen: 0, freezes: 0,
+    clogged: false, inStraw: null, mouth: [], blowMs: 0, practiceAct: false, air: false, risk: 0,
+    gasps: 0, melted: 0, slurpTime: 0, powerSum: 0, peak: 0, eaten: 0, chews: 0, clogs: 0, done: false,
+    deco: Array.from({ length: 14 }, () => ({ x: Math.random(), y: Math.random(), r: Math.random() })),
+    specks: Array.from({ length: blended ? 90 : 0 }, () => ({ x: Math.random(), y: Math.random(), r: .6 + Math.random() * 1.6 })) };
+  for (let i = 0; i < 80; i++) physics(1 / 60);
+  slurpOnMs = 0; slurpOffMs = 0; slurpGate = false; heard = "";
   $("#practiceTag").style.display = practice ? "block" : "none";
-  $("#holdHint").style.display = practice ? "block" : "none";
-  let last = performance.now();
-  cancelAnimationFrame(raf);
+  $("#playOrder").textContent = orderName(order);
+  $("#mtName").textContent = blended ? "BRAIN FREEZE" : "BURP";
+  $("#mtBar").classList.toggle("freeze", blended);
+  $("#chewBtn").style.display = chewy.length ? "" : "none";
+  $("#actBtn").style.display = "none";
+  let last = performance.now(); cancelAnimationFrame(raf);
   const loop = now => {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const dt = Math.min(.05, (now - last) / 1000); last = now;
     step(dt); draw(); hud();
     if (!S.done) raf = requestAnimationFrame(loop);
   };
   raf = requestAnimationFrame(loop);
 }
-function inputPower(){
-  if (practice) return holding ? 0.85 : 0;
-  const db = readDb();
-  return clamp((db - floorDb - T.gateDb) / T.rangeDb, 0, 1);
+const surfY = () => S.G.bot - S.G.cupH * .86 * clamp(S.liquid / S.cap, 0, 1);
+function constrainTip(){
+  const G = S.G, t = S.tip, half = G.sw / 2 + 2;
+  for (let k = 0; k < 2; k++) {
+    const dx = t.x - G.P.x, dy = t.y - G.P.y, len = Math.hypot(dx, dy), max = G.L - 30;
+    if (len > max) { t.x = G.P.x + dx / len * max; t.y = G.P.y + dy / len * max; }
+    t.y = clamp(t.y, G.top + 14, G.bot - 4);
+    t.x = clamp(t.x, G.xAt(t.y, -1) + half, G.xAt(t.y, 1) - half);
+  }
+}
+function physics(dt){
+  const G = S.G, ps = S.pieces;
+  for (const p of ps) p.y += (S.liquid > 0 ? 80 : 160) * dt;
+  for (let it = 0; it < 4; it++) {
+    for (let i = 0; i < ps.length; i++) for (let j = i + 1; j < ps.length; j++) {
+      const a = ps[i], b = ps[j], dx = b.x - a.x, dy = b.y - a.y, min = a.r + b.r, dd = dx * dx + dy * dy;
+      if (dd < min * min) { const d = Math.sqrt(dd) || .01, push = (min - d) / 2, nx = dx / d, ny = dy / d; a.x -= nx * push; a.y -= ny * push; b.x += nx * push; b.y += ny * push; }
+    }
+    if (S.popped) { // the straw shoves toppings out of its way
+      const ax = G.P.x, ay = G.P.y, vx = S.tip.x - ax, vy = S.tip.y - ay, vv = vx * vx + vy * vy || 1;
+      for (const p of ps) {
+        const min = p.r + G.sw / 2, u = clamp(((p.x - ax) * vx + (p.y - ay) * vy) / vv, 0, 1), qx = ax + vx * u, qy = ay + vy * u, dx = p.x - qx, dy = p.y - qy, d = Math.hypot(dx, dy);
+        if (d < min) { const nx = d ? dx / d : (Math.random() < .5 ? -1 : 1), ny = d ? dy / d : 0; p.x = qx + nx * min; p.y = qy + ny * min; }
+      }
+    }
+    for (const p of ps) { p.y = clamp(p.y, G.top + p.r, G.bot - p.r); p.x = clamp(p.x, G.xAt(p.y, -1) + p.r, G.xAt(p.y, 1) - p.r); }
+  }
+}
+// Layers of toppings stacked above the straw tip
+function layersAbove(){
+  const r = S.G.r0; let minY = Infinity;
+  for (const p of S.pieces) if (Math.abs(p.x - S.tip.x) < 2.6 * r && p.y < S.tip.y) minY = Math.min(minY, p.y);
+  return minY === Infinity ? 0 : Math.max(0, (S.tip.y - minY) / (1.8 * r));
+}
+function clogChance(h, power){
+  const tb = T.clog, i = Math.min(tb.length - 1, Math.floor(h));
+  const v = i >= tb.length - 1 ? tb[tb.length - 1] : tb[i] + (tb[i + 1] - tb[i]) * (h - i);
+  return v * (.6 + .8 * power);
+}
+function popLid(){
+  if (S.popped) return;
+  S.popped = true; S.tip = { x: S.G.cx, y: S.G.top + S.G.cupH * .4 }; constrainTip(); S.popT = .5;
+  flash("POP!", "var(--pink2)"); if (navigator.vibrate) navigator.vibrate(25);
 }
 function step(dt){
-  S.t += dt;
-  const raw = inputPower();
+  const G = S.G, b = S.b;
+  if (!S.popped) { physics(dt); return; }
+  S.t += dt; S.popT = Math.max(0, S.popT - dt);
+  const raw = readInput(dt);
   S.power += (raw - S.power) * Math.min(1, dt * 12);
-  const slurping = S.power > 0.06;
-  let flow = 0;
-  if (S.gasp > 0) {
-    S.gasp -= dt; S.breath = Math.min(100, S.breath + T.breathRegen * dt);
-  } else if (slurping) {
-    flow = T.maxFlow * Math.pow(S.power, T.flowCurve);
+  const slurping = S.power > .06, rest = () => S.breath = Math.min(100, S.breath + T.breathRegen * dt);
+  let suck = 0;
+  if (S.clogged) {
+    rest();
+    const blowing = practice ? S.practiceAct : S.loud >= T.blowLoud;
+    S.blowMs = blowing ? S.blowMs + dt * 1000 : Math.max(0, S.blowMs - dt * 600);
+    if (blowing && S.blowMs >= (practice ? 0 : T.blowMs)) {
+      S.pieces.push({ ...S.inStraw.piece, x: S.tip.x + (Math.random() - .5) * 4, y: S.tip.y - G.r0 }); // shoots back into the cup
+      S.clogged = false; S.inStraw = null; S.blowMs = 0; S.practiceAct = false; flash("PFFT! ✓", "var(--good)");
+    }
+  } else if (S.frozen > 0) {
+    S.frozen -= dt; S.burpWait += dt; rest(); S.meter = 100 * Math.max(0, S.frozen) / T.freezeLock;
+    if (S.frozen <= 0) { S.meter = 0; S.streak = 0; }
+  } else if (S.needBurp) {
+    S.burpWait += dt; rest();
+    const burping = practice ? S.practiceAct : S.burpNow;
+    S.burpMs = burping ? S.burpMs + dt * 1000 : Math.max(0, S.burpMs - dt * 500);
+    if (burping && S.burpMs >= (practice ? 0 : T.burpHoldMs)) {
+      S.needBurp = false; S.practiceAct = false; S.burpMs = 0; S.meter = 0; S.streak = 0; S.burps++; flash("BURP! ✓", "var(--good)");
+    }
+  } else if (S.gasp > 0) { S.gasp -= dt; rest(); }
+  else if (slurping) {
+    suck = S.power;
     S.breath -= (T.breathDrain + T.breathDrainPow * S.power) * dt;
     S.slurpTime += dt; S.powerSum += S.power * dt; S.peak = Math.max(S.peak, S.power);
     if (S.breath <= 0) { S.breath = 0; S.gasp = T.gaspTime; S.gasps++; flash("GASP!"); }
-  } else {
-    S.breath = Math.min(100, S.breath + T.breathRegen * dt);
+  } else rest();
+
+  const surf = surfY(), inLiquid = S.liquid > 0 && (S.tip.y > surf + 3 || S.tip.y > G.bot - 14);
+  S.flow = 0;
+  if (suck > 0 && inLiquid) { S.flow = T.maxFlow * b.flow * Math.pow(suck, T.flowCurve); S.liquid = Math.max(0, S.liquid - S.flow * dt); }
+  // burp / brain freeze meter: hard, nonstop drinking builds it; pauses settle it
+  if (!S.needBurp && S.frozen <= 0 && !S.clogged) {
+    const rate = S.blended ? T.freezeRate * b.freeze : T.burpRate * b.burp, streakK = S.blended ? T.freezeStreak : T.burpStreak;
+    if (S.flow > 0) { S.streak += dt; S.pauseT = 0; S.meter += rate * S.power * S.power * (1 + S.streak / streakK) * dt; }
+    else { S.pauseT += dt; if (S.pauseT > T.burpPause) { S.streak = 0; S.meter = Math.max(0, S.meter - (S.blended ? T.freezeSettle : T.burpSettle) * dt); } }
+    if (S.meter >= 100 && (S.liquid > .3 || S.pieces.length)) {
+      S.meter = 100;
+      if (S.blended) { S.frozen = T.freezeLock; S.freezes++; flash("BRAIN FREEZE!", "#4aa3ff"); if (navigator.vibrate) navigator.vibrate([60, 40, 60]); }
+      else { S.needBurp = true; S.burpMs = 0; flash("BURP!", "var(--warn)"); }
+    }
   }
-  S.liquid -= flow * dt;
-  for (const c of S.cubes) {
-    if (c.ml <= 0) continue;
-    const m = Math.min(c.ml, c.rate * dt); c.ml -= m; S.liquid += m; S.melted += m;
+  // ice melts into the drink
+  for (const c of S.cubes) { if (c.ml <= 0) continue; const m = Math.min(c.ml, c.rate * dt); c.ml -= m; S.liquid += m; S.melted += m; }
+  // toppings: anything touching the tip can ride up the straw
+  let best = -1, bd = Infinity;
+  S.pieces.forEach((p, i) => { const d = Math.hypot(p.x - S.tip.x, p.y - S.tip.y) - p.r; if (d < G.sw / 2 + 5 && d < bd) { bd = d; best = i; } });
+  S.air = suck > 0 && S.liquid > 0 && !inLiquid && best < 0;
+  const hasClogTop = S.pieces.some(p => topping(p.type).clog);
+  S.risk = hasClogTop ? clogChance(layersAbove(), Math.max(suck, .5)) : 0;
+  if (suck > 0 && !S.inStraw && S.mouth.length < T.mouth && best >= 0 && Math.random() < dt * T.pickRate * suck * (inLiquid ? 1 : .6)) {
+    const piece = S.pieces.splice(best, 1)[0], tp = topping(piece.type);
+    if (tp.clog && Math.random() < clogChance(layersAbove(), suck)) { S.clogged = true; S.clogs++; S.inStraw = { piece, p: .15 }; flash("CLOGGED!", "var(--warn)"); }
+    else S.inStraw = { piece, p: 0 };
   }
-  S.flow = flow;
-  if (flow > 0 && Math.random() < dt * 30 * S.power) S.bubbles.push({ x: Math.random(), y: 0, v: 0.4 + Math.random() * 0.6, r: 2 + Math.random() * 4 });
-  S.bubbles.forEach(b => b.y += b.v * dt); S.bubbles = S.bubbles.filter(b => b.y < 1);
-  if (S.liquid <= 0.3) { S.liquid = 0; finish(); }
+  if (S.inStraw && !S.clogged && suck > 0) {
+    S.inStraw.p += dt / T.travel * (.5 + suck);
+    if (S.inStraw.p >= 1) { S.mouth.push({ type: S.inStraw.piece.type, left: topping(S.inStraw.piece.type).chews }); S.inStraw = null; }
+  }
+  physics(dt);
+  if (S.liquid <= .3) S.liquid = 0;
+  if (S.liquid === 0 && !S.pieces.length && !S.inStraw && !S.mouth.length) finish();
 }
+function chew(){
+  if (!S || S.done || !S.mouth.length) return;
+  S.chews++; S.mouth[0].left--;
+  if (S.mouth[0].left <= 0) { S.mouth.shift(); S.eaten++; }
+  if (navigator.vibrate) navigator.vibrate(12);
+}
+$("#chewBtn").addEventListener("pointerdown", e => { e.preventDefault(); chew(); });
+$("#actBtn").addEventListener("pointerdown", e => { e.preventDefault(); if (S && (S.clogged || S.needBurp)) S.practiceAct = true; });
+
 let flashT = 0;
-function flash(txt){ const b = $("#banner"); b.textContent = txt; b.classList.add("on"); clearTimeout(flashT); flashT = setTimeout(() => b.classList.remove("on"), 900); }
+function flash(txt, color){ const b = $("#banner"); b.textContent = txt; b.style.color = color || ""; b.classList.add("on"); clearTimeout(flashT); flashT = setTimeout(() => b.classList.remove("on"), 900); }
+
 function hud(){
   $("#timer").textContent = fmt(S.t * 1000);
-  $("#leftMl").textContent = Math.ceil(S.liquid);
+  const toppings = S.pieces.length + (S.inStraw ? 1 : 0) + S.mouth.length;
+  $("#left").innerHTML = `<small>LEFT</small>${Math.ceil(S.liquid)} ml${S.pieces.length || toppings ? " · " + toppings + " 🟤" : ""}`;
   $("#volBar").style.width = (S.gasp > 0 ? 0 : S.power * 100) + "%";
-  $("#volPct").textContent = S.gasp > 0 ? "—" : Math.round(S.power * 100) + "%";
-  $("#brBar").style.width = S.breath + "%";
-  $("#brBar").classList.toggle("low", S.breath < 25 || S.gasp > 0);
+  $("#brBar").style.width = S.breath + "%"; $("#brBar").classList.toggle("low", S.breath < 25 || S.gasp > 0);
   $("#brTxt").textContent = S.gasp > 0 ? "CATCH YOUR BREATH" : "";
+  $("#mtBar").style.width = S.meter + "%"; $("#mtBar").classList.toggle("full", S.needBurp || S.frozen > 0);
+  $("#mtTxt").textContent = S.needBurp ? "BURP TO KEEP DRINKING" : S.frozen > 0 ? "FROZEN " + S.frozen.toFixed(1) + "s" : "";
+  const full = S.mouth.length >= T.mouth;
+  $("#mouthPips").textContent = "●".repeat(S.mouth.length) + "○".repeat(T.mouth - S.mouth.length);
+  $("#chewBtn").classList.toggle("full", full);
+  const act = $("#actBtn"), need = practice && (S.clogged || S.needBurp);
+  act.style.display = need ? "" : "none"; if (need) act.textContent = S.clogged ? "💨 Blow" : "😮‍💨 Burp";
+  let msg = "", col = "var(--muted)", vt = "";
+  if (!S.popped) msg = "Tap the lid to stab your straw in!";
+  else if (S.clogged) { msg = S.blowMs > 0 ? "Keep blowing…" : practice ? "Clogged! Tap Blow" : "Clogged! Blow hard into the mic"; }
+  else if (S.frozen > 0) msg = "Brain freeze! Hold on…";
+  else if (S.needBurp) msg = S.burpMs > 0 ? "Keep it going…" : practice ? "Too much air! Tap Burp" : "Too much air! Burp into the mic";
+  else if (S.air) msg = "Slurping air: lower the straw";
+  else if (full && S.pieces.length) msg = "Mouth full: chew!";
+  else if (practice) msg = "Hold to slurp · drag to steer";
+  if (S.gasp > 0) vt = "—";
+  else if (heard === "noise") { vt = "NOT A SLURP"; col = "var(--bad)"; }
+  else if (heard === "slurp") { vt = "SLURP ✓ " + Math.round(S.power * 100) + "%"; col = "var(--good)"; }
+  $("#volTxt").textContent = vt; $("#volTxt").style.color = col;
+  $("#hint").textContent = msg;
 }
-function resize(){
-  const r = cv.getBoundingClientRect(), d = window.devicePixelRatio || 1;
-  cv.width = Math.round(r.width * d); cv.height = Math.round(r.height * d);
-  g.setTransform(d, 0, 0, d, 0, 0);
-}
-window.addEventListener("resize", () => { if (S && !S.done) resize(); });
 
+/* ============ DRAWING ============ */
 function draw(){
-  const W = cv.clientWidth, H = cv.clientHeight;
+  const G = S.G, { W, H, top, bot, cupH, cx, sw } = G, xAt = G.xAt, b = S.b;
   g.clearRect(0, 0, W, H);
-  const cupH = Math.min(H * 0.78, W * 1.15), topW = Math.min(W * 0.66, cupH * 0.78), botW = topW * 0.72;
-  const cx = W / 2, top = (H - cupH) / 2 + cupH * 0.06, bot = top + cupH;
-  const xAt = (y, side) => { const k = (y - top) / cupH, w = topW + (botW - topW) * k; return cx + side * w / 2; };
   const cupPath = () => { g.beginPath(); g.moveTo(xAt(top,-1), top); g.lineTo(xAt(top,1), top); g.lineTo(xAt(bot,1), bot); g.lineTo(xAt(bot,-1), bot); g.closePath(); };
-
-  // liquid
-  const frac = clamp(S.liquid / S.cap, 0, 1), surf = bot - cupH * 0.94 * frac;
+  // glass
+  g.fillStyle = "rgba(255,255,255,.55)"; cupPath(); g.fill();
+  const surf = surfY();
   g.save(); cupPath(); g.clip();
-  const grad = g.createLinearGradient(0, surf, 0, bot);
-  grad.addColorStop(0, drink.color[0]); grad.addColorStop(1, drink.color[1]);
-  g.fillStyle = grad; g.globalAlpha = 0.85;
-  g.beginPath();
-  const wob = S.flow > 0 ? 3 * S.power : 1;
-  g.moveTo(0, surf);
-  for (let x = 0; x <= W; x += 8) g.lineTo(x, surf + Math.sin(x / 22 + S.t * 6) * wob);
-  g.lineTo(W, bot); g.lineTo(0, bot); g.closePath(); g.fill();
-  g.globalAlpha = 1;
-  // bubbles rising toward straw
-  g.fillStyle = "rgba(255,255,255,.55)";
-  for (const b of S.bubbles) {
-    const y = bot - (bot - surf) * b.y, x = cx + topW * 0.12 + (b.x - 0.5) * 22;
-    if (y > surf) { g.beginPath(); g.arc(x, y, b.r, 0, 7); g.fill(); }
+  if (S.liquid > 0) {
+    const grad = g.createLinearGradient(0, surf, 0, bot);
+    if (b.layered) { grad.addColorStop(0, b.color[0]); grad.addColorStop(.42, b.color[0]); grad.addColorStop(.58, b.color[1]); grad.addColorStop(1, b.color[1]); }
+    else { grad.addColorStop(0, b.color[0]); grad.addColorStop(1, b.color[1]); }
+    g.fillStyle = grad; g.beginPath(); g.moveTo(0, surf);
+    const wob = S.blended ? .6 : (S.flow > 0 ? 2.5 : 1);
+    for (let x = 0; x <= W; x += 8) g.lineTo(x, surf + Math.sin(x / 22 + S.t * 5) * wob);
+    g.lineTo(W, bot); g.lineTo(0, bot); g.closePath(); g.fill();
+    drawDeco(b, surf);
+    if (S.blended) { // icy specks + tornado swirl
+      g.fillStyle = "rgba(255,255,255,.55)";
+      for (const s of S.specks) { if (b.deco === "seeds") g.fillStyle = s.r > 1.6 ? "#2a1a14" : "rgba(255,255,255,.55)"; const y = surf + (bot - surf) * s.y; g.beginPath(); g.arc(xAt(y, -1) + (xAt(y, 1) - xAt(y, -1)) * s.x, y, s.r, 0, 7); g.fill(); }
+      if (b.swirl) {
+        g.strokeStyle = b.swirl; g.lineWidth = 7; g.globalAlpha = .7;
+        for (let k = 0; k < 3; k++) { g.beginPath(); for (let y = surf + 6; y < bot; y += 6) { const f = (y - surf) / (bot - surf); g.lineTo(cx + Math.sin(f * 7 + k * 2.1) * (xAt(y,1) - cx) * .85, y); } g.stroke(); }
+        g.globalAlpha = 1;
+      }
+    }
+
   }
-  // ice cubes
-  const cubeBase = topW * 0.2;
+  // bubbles up the straw when drinking
+  for (const p of S.pieces) drawPiece(p.x, p.y, p);
+  // ice cubes float at the surface
+  const cs = G.topW * .17;
   for (const c of S.cubes) {
-    if (c.ml <= 0.05) continue;
-    const s = cubeBase * Math.cbrt(c.ml / c.max);
-    const floatY = Math.max(surf + s * 0.35 + c.row * s * 0.75, top + s);
-    const y = Math.min(floatY + Math.sin(S.t * 2 + c.bob) * 2, bot - s * 0.55);
-    const x = cx + c.x * (topW * 0.62);
-    g.save(); g.translate(x, y); g.rotate(c.rot + Math.sin(S.t + c.bob) * 0.05);
-    g.fillStyle = "rgba(235,250,255,.78)"; g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 2;
-    roundRect(-s/2, -s/2, s, s, s * 0.22); g.fill(); g.stroke();
-    g.fillStyle = "rgba(255,255,255,.9)"; roundRect(-s*0.32, -s*0.32, s*0.22, s*0.1, 2); g.fill();
-    g.restore();
+    if (c.ml <= .05 || S.liquid <= 0) continue;
+    const s = cs * Math.cbrt(c.ml / c.max), y = Math.min(Math.max(surf + s * .35 + c.row * s * .75, top + s) + Math.sin(S.t * 2 + c.bob) * 2, bot - s * .55);
+    g.save(); g.translate(cx + c.x * G.topW * .62, y); g.rotate(c.rot + Math.sin(S.t + c.bob) * .05);
+    g.fillStyle = "rgba(235,250,255,.75)"; g.strokeStyle = "rgba(255,255,255,.95)"; g.lineWidth = 2;
+    rr(-s/2, -s/2, s, s, s * .22); g.fill(); g.stroke(); g.restore();
   }
+    const foamTop = order.tops.map(topping).filter(t => t.foam).pop();
+    if (foamTop && S.liquid > 0) { // cold foam cap
+      g.fillStyle = foamTop.foam; g.strokeStyle = "rgba(160,115,70,.45)"; g.lineWidth = 2; g.beginPath(); g.moveTo(0, surf + 20);
+      for (let x = 0; x <= W; x += 6) g.lineTo(x, surf - 6 + Math.sin(x / 10 + S.t * 1.5) * 2.5);
+      g.lineTo(W, surf + 20); for (let x = W; x >= 0; x -= 6) g.lineTo(x, surf + 18 + Math.sin(x / 7) * 3); g.closePath(); g.fill(); g.stroke();
+      g.fillStyle = "rgba(255,255,255,.7)"; for (let x = 12; x < W; x += 23) { g.beginPath(); g.arc(x, surf + 2 + Math.sin(x) * 3, 2.5, 0, 7); g.fill(); }
+      if (foamTop.id === "pumpkin_cold_foam") { g.fillStyle = "rgba(170,85,30,.75)"; for (let x = 10; x < W; x += 9) { g.beginPath(); g.arc(x, surf - 2 + Math.sin(x * 1.7) * 4, 1.3, 0, 7); g.fill(); } }
+    }
   g.restore();
 
-  // straw (behind rim, on top of liquid)
-  const sx1 = cx + topW * 0.12, sx0 = sx1 + topW * 0.2, sy0 = top - cupH * 0.2, sy1 = bot - 8, sw = Math.max(10, topW * 0.07);
-  g.lineCap = "round";
-  g.strokeStyle = "#ff3d7f"; g.lineWidth = sw; g.beginPath(); g.moveTo(sx0, sy0); g.lineTo(sx1, sy1); g.stroke();
-  if (S.flow > 0) { // liquid traveling up the straw
-    g.strokeStyle = drink.color[0]; g.lineWidth = sw * 0.45; g.globalAlpha = 0.5 + 0.5 * S.power;
-    g.beginPath(); g.moveTo(sx1, sy1); g.lineTo(sx0, sy0); g.stroke(); g.globalAlpha = 1;
+  // sealed lid (printed film)
+  const lx = xAt(top,-1) - 6, lw = xAt(top,1) - xAt(top,-1) + 12;
+  g.fillStyle = "#fff"; rr(lx, top - 9, lw, 11, 4); g.fill();
+  const lid = lidStyle(), mark = lid.mark || SEASON.fx[0];
+  g.textAlign = "center"; g.textBaseline = "middle";
+  if (lid.id === "dots") { g.fillStyle = "#ff8fab"; for (let x = lx + 10; x < lx + lw - 6; x += 16) { g.beginPath(); g.arc(x, top - 3.5, 2.4, 0, 7); g.fill(); } }
+  else { g.fillStyle = lid.id === "boba" ? "#3a2015" : lid.id === "stars" ? "#f2a31b" : "#ff6f91"; g.font = (lid.mark ? "9px" : "8px") + " sans-serif"; for (let x = lx + 11; x < lx + lw - 6; x += 15) g.fillText(mark, x, top - 3); }
+  g.textBaseline = "alphabetic";
+  g.strokeStyle = "rgba(74,47,39,.8)"; g.lineWidth = 3; rr(lx, top - 9, lw, 11, 4); g.stroke();
+
+  // straw pivots at the hole it punched in the lid
+  let ax, ay, bx = S.tip.x, by = S.tip.y;
+  if (!S.popped) { bx = cx; by = top - 16 - Math.abs(Math.sin(performance.now() / 300)) * 12; ax = cx; ay = by - G.L * .55; }
+  else { const dx = bx - G.P.x, dy = by - G.P.y, len = Math.hypot(dx, dy) || 1, out = G.L - len; ax = G.P.x - dx / len * out; ay = G.P.y - dy / len * out; }
+  const st = strawStyle(); let sfill = st.fill;
+  if (st.rainbow) { sfill = g.createLinearGradient(ax, ay, bx, by); ["#ff9fb6","#ffd97a","#a8e08a","#9fd2ff","#c7a6ff"].forEach((c, i) => sfill.addColorStop(i / 4, c)); }
+  g.lineCap = "butt"; g.strokeStyle = S.clogged ? "rgba(232,86,111,.7)" : sfill; g.lineWidth = sw;
+  g.beginPath(); g.moveTo(ax, ay); g.lineTo(bx, by); g.stroke();
+  const nx = -(by - ay), ny = bx - ax, nl = Math.hypot(nx, ny) || 1, ox = nx / nl * sw / 2, oy = ny / nl * sw / 2;
+  g.strokeStyle = st.edge; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(ax + ox, ay + oy); g.lineTo(bx + ox, by + oy); g.moveTo(ax - ox, ay - oy); g.lineTo(bx - ox, by - oy); g.stroke();
+  if (S.flow > 0) { g.strokeStyle = b.color[0]; g.globalAlpha = .85; g.lineWidth = sw * .55; g.beginPath(); g.moveTo(bx, by); g.lineTo(ax, ay); g.stroke(); g.globalAlpha = 1; }
+  if (S.inStraw) { const p = S.inStraw.p, pc = S.inStraw.piece; drawPiece(bx + (ax - bx) * p, by + (ay - by) * p, { ...pc, r: Math.min(pc.r, sw * .48) }); }
+  if (S.popped) {
+    g.strokeStyle = "rgba(74,47,39,.85)"; g.lineWidth = 2; g.beginPath(); g.ellipse(G.P.x, top - 4, sw * .75, 4, 0, 0, 7); g.stroke();
+    if (S.risk > 0) { const col = S.risk > .35 ? "#e8566f" : S.risk > .12 ? "#f2a31b" : "#3fae73"; g.strokeStyle = col; g.lineWidth = 3; g.beginPath(); g.arc(bx, by, sw * .7 + 3, 0, 7); g.stroke(); }
   }
-  g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 2; g.beginPath(); g.moveTo(sx0 - sw*0.25, sy0); g.lineTo(sx1 - sw*0.25, sy1); g.stroke();
+  if (S.popT > 0) { g.fillStyle = `rgba(255,143,171,${S.popT})`; g.beginPath(); g.arc(G.P.x, top - 4, 34 * (1 - S.popT) + 8, 0, 7); g.fill(); }
 
   // cup outline + shine
-  cupPath(); g.strokeStyle = "rgba(242,245,255,.85)"; g.lineWidth = 4; g.lineJoin = "round"; g.stroke();
-  g.fillStyle = "rgba(255,255,255,.06)"; cupPath(); g.fill();
-  g.strokeStyle = "rgba(255,255,255,.18)"; g.lineWidth = 6;
-  g.beginPath(); g.moveTo(xAt(top + cupH*0.08, -1) + 14, top + cupH*0.08); g.lineTo(xAt(top + cupH*0.6, -1) + 14, top + cupH*0.6); g.stroke();
+  cupPath(); g.strokeStyle = "rgba(74,47,39,.85)"; g.lineWidth = 4; g.lineJoin = "round"; g.stroke();
+  g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 6;
+  g.beginPath(); g.moveTo(xAt(top + cupH * .08, -1) + 14, top + cupH * .08); g.lineTo(xAt(top + cupH * .55, -1) + 14, top + cupH * .55); g.stroke();
+  // brain freeze frost
+  if (S.frozen > 0) {
+    const a = Math.min(1, S.frozen / T.freezeLock + .2) * .75, rg = g.createRadialGradient(W/2, H/2, Math.min(W, H) * .2, W/2, H/2, Math.max(W, H) * .7);
+    rg.addColorStop(0, "rgba(220,240,255,0)"); rg.addColorStop(1, `rgba(200,232,255,${a})`); g.fillStyle = rg; g.fillRect(0, 0, W, H);
+  }
+  if (!S.popped) { g.fillStyle = "#ff6f91"; g.font = '600 20px Fredoka, sans-serif'; g.textAlign = "center"; g.fillText("Tap to stab the lid!", cx, Math.min(H - 10, bot + 26)); }
 
-  function roundRect(x, y, w, h, r){ g.beginPath(); g.moveTo(x+r, y); g.arcTo(x+w, y, x+w, y+h, r); g.arcTo(x+w, y+h, x, y+h, r); g.arcTo(x, y+h, x, y, r); g.arcTo(x, y, x+w, y, r); g.closePath(); }
+  function drawDeco(b, surf){
+    if (!b.deco || b.deco === "seeds") return;
+    const ins = (y, f) => xAt(y, -1) + (xAt(y, 1) - xAt(y, -1)) * f;
+    if (b.deco === "tiger") { // brown sugar streaks down the glass
+      g.strokeStyle = "rgba(120,62,24,.75)"; g.lineCap = "round";
+      for (const d of S.deco) { g.lineWidth = 4 + d.r * 6; g.beginPath(); const x0 = d.x < .5 ? -1 : 1, y0 = surf + (bot - surf) * d.y * .6;
+        for (let k = 0; k < 6; k++) { const y = y0 + k * 14; if (y > bot) break; g.lineTo(xAt(y, x0) - x0 * (6 + d.r * 18 + Math.sin(k + d.r * 6) * 6), y); } g.stroke(); }
+      return;
+    }
+    for (const d of S.deco) {
+      const y = surf + 4 + d.y * 10, x = ins(y, .08 + d.x * .84);
+      if (y > bot) continue;
+      if (b.deco === "cinnamon") { g.fillStyle = "rgba(140,70,25,.8)"; g.beginPath(); g.arc(x, y - 2, 1.4 + d.r * 1.4, 0, 7); g.fill(); }
+      else if (b.deco === "candy") { g.fillStyle = d.r > .5 ? "#e8334a" : "#fff"; g.save(); g.translate(x, y); g.rotate(d.r * 6); g.fillRect(-4, -1.5, 8, 3); g.restore(); }
+      else if (b.deco === "petals") { g.fillStyle = "rgba(255,170,200,.95)"; g.save(); g.translate(x, y - 2); g.rotate(d.r * 6); g.beginPath(); g.ellipse(0, 0, 6, 3.2, 0, 0, 7); g.fill(); g.restore(); }
+      else if (b.deco === "lemon" && d.r > .6) { g.fillStyle = "#ffe66b"; g.strokeStyle = "#f5c518"; g.lineWidth = 2; g.beginPath(); g.arc(x, y + 2, 11, 0, 7); g.fill(); g.stroke();
+        g.strokeStyle = "rgba(255,255,255,.8)"; g.lineWidth = 1; for (let a = 0; a < 6; a++) { g.beginPath(); g.moveTo(x, y + 2); g.lineTo(x + Math.cos(a) * 9, y + 2 + Math.sin(a) * 9); g.stroke(); } }
+      else if (b.deco === "lychee" && d.r > .45) { g.fillStyle = "rgba(255,255,255,.95)"; g.beginPath(); g.ellipse(x, y + 4, 8, 6, d.r, 0, 7); g.fill(); g.strokeStyle = "rgba(230,200,195,.9)"; g.lineWidth = 1; g.stroke(); }
+    }
+  }
+  function rr(x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+  function drawPiece(x, y, p){
+    const tp = topping(p.type), r = p.r;
+    if (tp.shape === "ball") {
+      g.fillStyle = p.col; g.beginPath(); g.arc(x, y, r, 0, 7); g.fill();
+      g.fillStyle = "rgba(255,255,255,.3)"; g.beginPath(); g.arc(x - r * .35, y - r * .35, r * .3, 0, 7); g.fill();
+    } else if (tp.shape === "cube") {
+      g.save(); g.translate(x, y); g.rotate(p.rot); g.globalAlpha = p.type === "jelly" ? .85 : .95;
+      g.fillStyle = p.col; rr(-r * .85, -r * .85, r * 1.7, r * 1.7, r * .35); g.fill();
+      g.fillStyle = "rgba(255,255,255,.35)"; rr(-r * .55, -r * .6, r * .5, r * .25, 2); g.fill(); g.restore(); g.globalAlpha = 1;
+    } else { // mochi
+      g.fillStyle = p.col; g.beginPath(); g.ellipse(x, y, r, r * .88, 0, 0, 7); g.fill();
+      g.strokeStyle = "rgba(240,180,195,.9)"; g.lineWidth = 1.5; g.stroke();
+      g.fillStyle = "rgba(255,170,190,.45)"; g.beginPath(); g.arc(x + r * .2, y + r * .15, r * .35, 0, 7); g.fill();
+    }
+  }
 }
-// practice hold
-cv.addEventListener("pointerdown", e => { holding = true; e.preventDefault(); });
-// Block iOS long-press menus (copy/share/magnifier) everywhere except text inputs
+window.addEventListener("resize", () => { if (S && !S.done && screen === "play") { resize(); const o = S.G; S.G = geom(); const k = S.G.cupH / o.cupH;
+  for (const p of S.pieces) { p.x = S.G.cx + (p.x - o.cx) * k; p.y = S.G.top + (p.y - o.top) * k; p.r *= k; }
+  S.tip.x = S.G.cx + (S.tip.x - o.cx) * k; S.tip.y = S.G.top + (S.tip.y - o.top) * k; } });
+
+// touch: tap lid to stab, drag to steer, hold to slurp in practice
+let dragAt = null;
+cv.addEventListener("pointerdown", e => {
+  e.preventDefault(); holding = true;
+  if (!S || S.done) return;
+  if (!S.popped) popLid();
+  dragAt = { x: e.clientX, y: e.clientY };
+});
+cv.addEventListener("pointermove", e => {
+  if (!dragAt || !S || !S.popped) return;
+  S.tip.x += e.clientX - dragAt.x; S.tip.y += e.clientY - dragAt.y; constrainTip(); dragAt = { x: e.clientX, y: e.clientY };
+});
+["pointerup","pointercancel","pointerleave"].forEach(ev => cv.addEventListener(ev, () => { holding = false; dragAt = null; }));
+cv.addEventListener("touchstart", e => e.preventDefault(), { passive:false });
 document.addEventListener("contextmenu", e => { if (e.target.tagName !== "INPUT") e.preventDefault(); });
 document.addEventListener("selectstart", e => { if (e.target.tagName !== "INPUT") e.preventDefault(); });
-cv.addEventListener("touchstart", e => e.preventDefault(), { passive:false });
-cv.addEventListener("touchend", e => { e.preventDefault(); holding = false; }, { passive:false });
-["pointerup","pointercancel","pointerleave"].forEach(ev => cv.addEventListener(ev, () => holding = false));
-$("#quit").onclick = () => { if (S) S.done = true; cancelAnimationFrame(raf); renderMenu(); show("menu"); };
-document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.done && $("#play").classList.contains("on")) { S.done = true; cancelAnimationFrame(raf); renderMenu(); show("menu"); } });
+$("#quit").onclick = () => { if (S) S.done = true; cancelAnimationFrame(raf); show("ticket"); };
+document.addEventListener("visibilitychange", () => { if (document.hidden && S && !S.done && screen === "play") { S.done = true; cancelAnimationFrame(raf); show("ticket"); } });
 
-/* ============ RESULTS ============ */
+/* ============ RECEIPT ============ */
 let lastRun = null;
 function finish(){
   if (S.done) return; S.done = true;
-  const ms = Math.round(S.t * 1000);
-  const stats = {
-    avg_power: S.slurpTime ? Math.round(S.powerSum / S.slurpTime * 100) : 0,
-    peak_power: Math.round(S.peak * 100),
-    ice_melted_ml: Math.round(S.melted),
-    gasps: S.gasps,
-    slurp_s: +S.slurpTime.toFixed(2),
-  };
-  lastRun = { drink: drink.id, ms, stats, practice, posted: false };
-  let newBest = false;
+  const ms = Math.round(S.t * 1000), key = orderKey(order);
+  const stats = { avg_power: S.slurpTime ? Math.round(S.powerSum / S.slurpTime * 100) : 0, peak_power: Math.round(S.peak * 100),
+    gasps: S.gasps, ice_melted_ml: Math.round(S.melted), burps: S.burps, freezes: S.freezes, wait_s: +S.burpWait.toFixed(2),
+    eaten: S.eaten, chews: S.chews, clogs: S.clogs, stars: stars(order) };
+  lastRun = { order: { ...order, tops: [...order.tops] }, key, ms, stats, practice, daily: orderIsDaily && daily && key === daily.key, posted: false };
+  let newBest = false, stampMsg = "";
   if (!practice) {
-    const lb = localBoard(drink.id);
-    newBest = !lb.length || ms < lb[0].ms;
-    lb.push({ ms, name: ww ? ww.name : "Guest", at: Date.now() });
-    lb.sort((a,b) => a.ms - b.ms); store.set("slurp_local_" + drink.id, lb.slice(0, 20));
+    const lb = localBests(); newBest = !lb[key] || ms < lb[key]; if (newBest) { lb[key] = ms; store.set("slurp_bests", lb); }
+    const before = stampsNow(); store.set("slurp_stamps", localStamps() + 1);
+    const after = stampsNow(), un = REWARDS.find(u => before < u.at && after >= u.at);
+    stampMsg = `<span class="stamp">★</span><div style="margin-top:6px;font-weight:800">+1 stamp · ${after} total</div>` + (un ? `<div style="color:var(--pink2);font-weight:800">New reward: ${un.icon} ${un.what}! Equip it on your punch card.</div>` : "");
   }
-  setTimeout(() => showResults(newBest), 400);
+  renderAcct();
+  setTimeout(() => showReceipt(newBest, stampMsg), 450);
 }
-function showResults(newBest){
-  const r = lastRun;
-  $("#resDrink").textContent = drink.name.toUpperCase() + (r.practice ? " · PRACTICE" : "");
-  $("#resTime").textContent = fmt(r.ms) + "s";
-  $("#resBadge").innerHTML = newBest ? `<span class="badge">NEW PERSONAL BEST</span>` : "";
-  $("#resStats").innerHTML = [
-    ["Avg slurp power", r.stats.avg_power + "%"], ["Peak power", r.stats.peak_power + "%"],
-    ["Ice melted into your drink", r.stats.ice_melted_ml + " ml"], ["Gasps", r.stats.gasps],
-  ].map(([k,v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join("");
-  paintPost(); show("results");
+function showReceipt(newBest, stampMsg){
+  const r = lastRun, o = r.order, b = base(o.base);
+  $("#rcNo").textContent = `Order #${String(Math.floor(Math.random() * 900) + 100)} · ${new Date().toLocaleDateString()}` + (r.practice ? " · PRACTICE" : "");
+  const lines = [[b.name + (r.daily ? " ⭐" : ""), starHtml(stars(o))]];
+  if (b.type === "liquid") lines.push([ICE_NAMES[o.ice], ""]);
+  o.tops.forEach(t => lines.push(["+ " + topping(t).name, ""]));
+  $("#rcLines").innerHTML = lines.map(([a, c]) => `<div class="ln"><span>${esc(a)}</span><span class="stars">${c}</span></div>`).join("");
+  $("#rcTime").textContent = fmt(r.ms) + "s";
+  $("#rcBadge").innerHTML = newBest ? `<span class="badge" style="background:var(--good);color:#fff">NEW PERSONAL BEST</span>` : "";
+  const s = r.stats, rows = [["Avg slurp power", s.avg_power + "%"]];
+  if (b.type === "liquid") { rows.push(["Burps", s.burps]); if (s.ice_melted_ml) rows.push(["Ice melted in", s.ice_melted_ml + " ml"]); }
+  else rows.push(["Brain freezes", s.freezes]);
+  if (s.eaten) rows.push(["Toppings chewed", s.eaten]);
+  if (hasClog(o)) rows.push(["Clogs", s.clogs]);
+  rows.push(["Gasps", s.gasps]);
+  $("#rcStats").innerHTML = rows.map(([k, v]) => `<div class="ln"><span>${k}</span><b>${v}</b></div>`).join("");
+  $("#rcStamp").innerHTML = stampMsg || "";
+  paintPost(); show("receipt");
   if (!r.practice && ww) post();
 }
 function paintPost(msg){
-  const r = lastRun, box = $("#postBox");
-  if (r.practice) { box.innerHTML = "Practice runs don't go on the board."; return; }
-  if (msg) { box.innerHTML = msg; return; }
+  const r = lastRun, box = $("#rcPost");
+  if (r.practice) return box.innerHTML = `<span class="muted">Practice runs aren't posted.</span>`;
+  if (msg) return box.innerHTML = msg;
   if (!ww) {
-    box.innerHTML = `Sign in with your WW account to post this time.<div style="margin-top:10px"><button class="btn pink" id="postSign">Sign in &amp; post</button></div>`;
-    $("#postSign").onclick = () => openSheet(post);
-    return;
+    box.innerHTML = `<div class="muted" style="font-weight:700">Sign in to post this to the leaderboard.</div><button class="btn" id="postSign" style="margin-top:8px;padding:11px">Sign in &amp; post</button>`;
+    $("#postSign").onclick = () => openSheet(post); return;
   }
-  box.innerHTML = "Posting…";
+  box.innerHTML = `<span class="muted">Posting…</span>`;
 }
 async function post(){
   const r = lastRun; if (!r || r.posted || r.practice || !ww) return;
   paintPost();
   try {
-    const res = await rpc("slurp_submit", { p_name: ww.name, p_token: ww.token, p_drink: r.drink, p_time_ms: r.ms, p_stats: r.stats });
-    r.posted = true;
-    paintPost(`<div class="big">#${res.rank}</div>${res.new_best ? "New online best!" : "Your online best: " + fmt(res.best_ms) + "s"}`);
+    const res = await rpc("slurp_submit_order", { p_name: ww.name, p_token: ww.token, p_order: r.order, p_time_ms: r.ms, p_stats: r.stats, p_daily: r.daily });
+    r.posted = true; await refreshMe();
+    let html = `<div class="f" style="font-size:26px;color:var(--good)">#${res.rank}</div><div>in ${esc(BOARDS[res.category])}</div>`;
+    if (res.season) html += `<div style="margin-top:6px">${SEASON.icon} ${SEASON.name} board: <b>#${res.season_rank}</b></div>`;
+    if (res.daily) html += `<div style="margin-top:6px">⭐ Today's Special: <b>#${res.daily_rank}</b></div>`;
+    paintPost(html);
   } catch(e){
     if (/sign in/i.test(e.message)) { ww = null; store.del("ww_session"); renderAcct(); paintPost(); }
-    else paintPost(`${esc(e.message)}<div style="margin-top:10px"><button class="btn alt" id="retryPost">Try again</button></div>`), $("#retryPost").onclick = post;
+    else { paintPost(`${esc(e.message)}<br><button class="btn alt" id="retryPost" style="margin-top:8px;padding:10px">Try again</button>`); $("#retryPost").onclick = post; }
   }
 }
-$("#again").onclick = () => practice ? countdown() : (micOk ? countdown() : startFlow());
-$("#toMenu").onclick = () => { renderMenu(); show("menu"); };
+$("#rcAgain").onclick = () => { order = normOrder(lastRun.order); practice ? countdown() : (micOk ? countdown() : startFlow()); };
+$("#rcNew").onclick = () => show("menu");
 
-/* ============ LEADERBOARD ============ */
-let boardTab = "online", boardDrink = "water_ice";
-function openBoard(id){ boardDrink = id; $("#boardDrink").textContent = drinkById(id).name; show("board"); paintBoard(); }
-document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
-  boardTab = b.dataset.tab; document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b)); paintBoard();
-});
+/* ============ LEADERBOARDS ============ */
+let boardTab = "daily";
+$$("#boardTabs button").forEach(b => b.onclick = () => { boardTab = b.dataset.b; $$("#boardTabs button").forEach(x => x.classList.toggle("on", x === b)); paintBoard(); });
 async function paintBoard(){
-  const L = $("#boardList"), me = ww ? ww.name.toLowerCase() : null;
-  const row = (rk, n, ms, mine) => `<div class="lb ${mine ? "me" : ""}"><div class="r">${rk}</div><div class="n">${esc(n)}</div><div class="t">${fmt(ms)}s</div></div>`;
-  if (boardTab === "local") {
-    const lb = localBoard(boardDrink);
-    L.innerHTML = lb.length ? lb.map((e,i) => row(i+1, e.name, e.ms, false)).join("") : `<div class="empty">No runs on this device yet.</div>`;
+  const L = $("#boardList"), mine = ww ? ww.name.toLowerCase() : null;
+  const row = (rk, n, ms, sub, me_) => `<div class="lb ${me_ ? "me" : ""}"><div class="r">${rk}</div><div class="n"><b>${esc(n)}</b><small>${esc(sub)}</small></div><div class="t">${fmt(ms)}s</div></div>`;
+  if (boardTab === "mine") {
+    $("#boardSub").textContent = "Your best time on every exact order you've finished.";
+    const all = { ...localBests() }; if (me && me.bests) for (const [k, v] of Object.entries(me.bests)) all[k] = all[k] ? Math.min(all[k], v) : v;
+    const list = Object.entries(all).sort((a, b) => a[1] - b[1]);
+    L.innerHTML = list.length ? list.map(([k, v], i) => { const o = parseKey(k); return base(o.base) ? row(i + 1, orderName(o, true), v, base(o.base).type === "liquid" ? ICE_NAMES[o.ice] : "Blended", false) : ""; }).join("")
+      : `<div class="empty">Finish an order to start your list.</div>`;
     return;
   }
+  $("#boardSub").textContent = boardTab === "daily" ? (daily ? "Today: " + orderName(daily.order) : "") : "Best time per player. " + BOARDS[boardTab] + ".";
   L.innerHTML = `<div class="empty">Loading…</div>`;
   try {
-    const rows = await rpc("slurp_leaderboard", { p_drink: boardDrink, p_limit: 50 });
-    L.innerHTML = rows.length ? rows.map(e => row(e.rank, e.name, e.time_ms, me && e.name.toLowerCase() === me)).join("")
-      : `<div class="empty">No times yet. Be the first.</div>`;
+    const rows = await rpc("slurp_board", { p_board: boardTab, p_limit: 50 });
+    L.innerHTML = rows.length ? rows.map(e => { const o = parseKey(e.order_key); return row(e.rank, e.name, e.time_ms, base(o.base) ? orderName(o, true) : "", mine && e.name.toLowerCase() === mine); }).join("")
+      : `<div class="empty">No times yet. Be the first!</div>`;
   } catch(e){ L.innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
 }
 
+/* ============ PUNCH CARD ============ */
+function renderPunch(){
+  const n = stampsNow(), onCard = n % 10, cards = Math.floor(n / 10);
+  $("#punchTotal").textContent = `${n} stamp${n === 1 ? "" : "s"}` + (cards ? ` · ${cards} card${cards > 1 ? "s" : ""} filled` : "");
+  $("#holes").innerHTML = Array.from({ length: 10 }, (_, i) => `<div class="hole ${i < onCard ? "on" : ""}">${i < onCard ? "🧋" : ""}</div>`).join("");
+  const pick = (list, key, swatch) => list.map(x => {
+    const ok = n >= x.at, on = (key === "straw" ? strawStyle() : lidStyle()).id === x.id;
+    return `<button class="top-b ${on ? "on" : ""} ${ok ? "" : "locked"}" data-k="${key}" data-id="${x.id}"><i style="${swatch(x)}"></i><div><b>${esc(x.name)}</b><small>${ok ? (on ? "Equipped" : "Tap to equip") : "🔒 " + x.at + " stamps"}</small></div></button>`;
+  }).join("");
+  $("#strawPick").innerHTML = pick(STRAWS, "straw", x => x.rainbow ? "background:linear-gradient(90deg,#ff9fb6,#ffd97a,#a8e08a,#9fd2ff,#c7a6ff);border-radius:4px" : `background:${x.fill};border:2px solid ${x.edge};border-radius:4px`);
+  $("#lidPick").innerHTML = pick(LIDS, "lid", x => `background:#fff;border:2px solid var(--line);display:grid;place-items:center;font-size:12px;color:var(--pink2)" data-m="${x.mark || SEASON.fx[0]}`);
+  $$("#lidPick i").forEach(i => i.textContent = i.dataset.m);
+  $$("#strawPick .top-b, #lidPick .top-b").forEach(el => el.onclick = () => {
+    const list = el.dataset.k === "straw" ? STRAWS : LIDS, x = list.find(v => v.id === el.dataset.id);
+    if (n < x.at) return flashToast(`${x.name} unlocks at ${x.at} stamps. You have ${n}.`);
+    style[el.dataset.k] = x.id; store.set("slurp_style", style); renderPunch();
+  });
+  $("#punchGuest").textContent = ww ? "" : "Sign in with your WW account to post times and keep your stamps with you.";
+}
+
+/* ============ MUSIC: original cafe lo-fi, synthesized live ============ */
+const music = (() => {
+  const QUIET = new Set(["cal", "count", "play"]); // the mic needs silence on these screens
+  const BPM = 78, BEAT = 60 / BPM, VOL = .26;
+  let ctx = null, master = null, noise = null, on = store.get("slurp_music") !== false, playing = false, step = 0, nextT = 0, timer = 0, cur = "splash";
+  // Fmaj7 - Em7 - Dm7 - Cmaj7 (voicings in MIDI)
+  const CH = [[53,57,60,64],[52,55,59,62],[50,53,57,60],[48,52,55,59]], BASS = [41,40,38,36];
+  const MEL = [[[1.5,.5,76],[2,1,77],[3,1,74]], [[.5,.5,72],[1,1.5,71],[3,.5,67]], [[1.5,.5,69],[2,1,72],[3,.75,74]], [[0,2.5,71],[3,.5,67]],
+               [[1,.5,81],[1.5,.5,79],[2,1.5,76]], [[.5,.5,74],[1,1,72],[2.5,1,71]], [[1.5,.5,69],[2,.5,72],[2.5,1,74]], [[0,3,72]]];
+  const hz = m => 440 * Math.pow(2, (m - 69) / 12), sw = b => Math.floor(b) + ((b % 1) === .5 ? .6 : (b % 1));
+  function init(){
+    if (ctx) return;
+    ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 3200;
+    master = ctx.createGain(); master.gain.value = 0; master.connect(lp); lp.connect(ctx.destination);
+    noise = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noise.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+  }
+  function keys(t, m, dur, vol){ // soft electric-piano: sine + quiet octave, gentle tremolo
+    [[1, "sine", vol], [2, "triangle", vol * .18]].forEach(([mult, type, v]) => {
+      const o = ctx.createOscillator(), gn = ctx.createGain(); o.type = type; o.frequency.value = hz(m) * mult; o.detune.value = (Math.random() - .5) * 8;
+      o.connect(gn).connect(master);
+      gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(v, t + .02); gn.gain.exponentialRampToValueAtTime(v * .35, t + .5); gn.gain.exponentialRampToValueAtTime(.0001, t + dur + .4);
+      o.start(t); o.stop(t + dur + .45);
+    });
+  }
+  function bass(t, m, dur){
+    const o = ctx.createOscillator(), gn = ctx.createGain(); o.type = "sine"; o.frequency.value = hz(m); o.connect(gn).connect(master);
+    gn.gain.setValueAtTime(0, t); gn.gain.linearRampToValueAtTime(.32, t + .02); gn.gain.exponentialRampToValueAtTime(.12, t + dur * .7); gn.gain.exponentialRampToValueAtTime(.0001, t + dur);
+    o.start(t); o.stop(t + dur + .05);
+  }
+  function kick(t){ const o = ctx.createOscillator(), gn = ctx.createGain(); o.frequency.setValueAtTime(110, t); o.frequency.exponentialRampToValueAtTime(42, t + .18); o.connect(gn).connect(master);
+    gn.gain.setValueAtTime(.5, t); gn.gain.exponentialRampToValueAtTime(.0001, t + .3); o.start(t); o.stop(t + .32); }
+  function hit(t, type, f, dur, vol, q){ const s = ctx.createBufferSource(), fl = ctx.createBiquadFilter(), gn = ctx.createGain(); s.buffer = noise; fl.type = type; fl.frequency.value = f; if (q) fl.Q.value = q;
+    s.connect(fl).connect(gn).connect(master); gn.gain.setValueAtTime(vol, t); gn.gain.exponentialRampToValueAtTime(.0001, t + dur); s.start(t, Math.random() * .5); s.stop(t + dur + .02); }
+  function bar(i, t0){
+    const c = CH[i % 4];
+    c.forEach((m, k) => keys(t0 + k * .012, m, BEAT * 1.6, .045));          // chord on 1
+    c.forEach((m, k) => keys(t0 + sw(2.5) * BEAT + k * .012, m, BEAT, .03)); // push on the "and" of 3
+    bass(t0, BASS[i % 4], BEAT * 1.4); bass(t0 + sw(1.5) * BEAT, BASS[i % 4] + 7, BEAT * .8); bass(t0 + 3 * BEAT, BASS[i % 4] + 12, BEAT * .8);
+    kick(t0); kick(t0 + sw(2.5) * BEAT);
+    [1, 3].forEach(b => hit(t0 + b * BEAT, "bandpass", 1800, .18, .12, .8));  // snare
+    for (let e = 0; e < 8; e++) hit(t0 + sw(e / 2) * BEAT, "highpass", 8000, .03, e % 2 ? .035 : .02);
+    for (const [b, d, m] of MEL[i % 8]) keys(t0 + sw(b) * BEAT, m, d * BEAT, .05);
+    for (let k = 0; k < 6; k++) hit(t0 + Math.random() * 4 * BEAT, "highpass", 2500, .008, .05); // vinyl crackle
+  }
+  function pump(){ while (nextT < ctx.currentTime + .25) { bar(step, nextT); nextT += 4 * BEAT; step++; } }
+  function start(){
+    if (!ctx || !on || QUIET.has(cur)) return;
+    if (ctx.state !== "running") ctx.resume();
+    if (!playing) { playing = true; nextT = ctx.currentTime + .08; timer = setInterval(pump, 80); pump(); }
+    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(VOL, ctx.currentTime, .4);
+  }
+  function stop(fast){
+    if (!ctx || !playing) return;
+    master.gain.cancelScheduledValues(ctx.currentTime); master.gain.setTargetAtTime(0, ctx.currentTime, fast ? .05 : .3);
+    clearInterval(timer); playing = false;
+    setTimeout(() => { if (!playing && ctx.state === "running") ctx.suspend(); }, fast ? 400 : 1800);
+  }
+  const paint = () => $$(".musicBtn").forEach(b => b.textContent = on ? "♪ On" : "♪ Off");
+  document.addEventListener("pointerdown", () => { init(); start(); }, { capture: true });
+  document.addEventListener("visibilitychange", () => document.hidden ? stop(true) : start());
+  return {
+    onScreen(id){ cur = id; QUIET.has(id) ? stop(id === "cal") : start(); },
+    toggle(){ on = !on; store.set("slurp_music", on); paint(); on ? (init(), start()) : stop(); },
+    paint,
+  };
+})();
+$$(".musicBtn").forEach(b => b.onclick = () => music.toggle());
+music.paint();
+
 /* ============ BOOT ============ */
-renderAcct(); renderMenu(); resume();
+document.documentElement.style.setProperty("--awn", SEASON.awning);
+$("#fx").innerHTML = Array.from({ length: 14 }, (_, i) => `<span style="left:${Math.random() * 100}%;font-size:${14 + Math.random() * 12}px;animation-duration:${8 + Math.random() * 8}s;animation-delay:${-Math.random() * 16}s">${SEASON.fx[i % SEASON.fx.length]}</span>`).join("");
+$("#fx").classList.add("on");
+$("#seasonTag").textContent = SEASON.tag;
+$("#seasonTag").onclick = () => { menuTab = "season"; $$("#menuTabs button").forEach(x => x.classList.toggle("on", x.dataset.t === "season")); show("menu"); };
+$("#seasonTab").textContent = `${SEASON.icon} ${SEASON.name}`;
+$("#seasonBoardTab").textContent = `${SEASON.icon} ${SEASON.name}`;
+renderAcct(); refreshMe(); loadDaily();
 })();
 </script>
 </body>
