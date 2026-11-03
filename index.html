@@ -40,6 +40,7 @@ h2{font-size:24px} h3{font-size:17px}
 .btn.alt{background:var(--card);color:var(--ink);border:2px solid var(--line);box-shadow:0 4px 0 var(--line)}
 .btn.green{background:var(--matcha);box-shadow:0 4px 0 #6e9f4c}
 .btn:disabled{opacity:.45}
+button{touch-action:manipulation}
 .row{display:flex;gap:10px}
 .scroll{overflow:auto;flex:1;margin:0 -16px;padding:0 16px}
 .err{color:var(--bad);font-size:14px;min-height:18px;font-weight:700}
@@ -125,6 +126,9 @@ h2{font-size:24px} h3{font-size:17px}
 #hint{text-align:center;font:800 13px Nunito;color:var(--pink2);padding:4px 0;min-height:22px}
 #actBtn{flex:1;padding:11px}
 #chewBtn{flex:2;padding:11px;touch-action:manipulation;background:var(--ink);box-shadow:0 4px 0 #2e1c17}
+#chewBtn.mic{pointer-events:none}
+#chewBtn.chomp{animation:chomp .18s ease-out}
+@keyframes chomp{50%{transform:scale(.93)}}
 #chewBtn.full{background:var(--warn);box-shadow:0 4px 0 #c47f0c;animation:pulse .4s infinite alternate}
 
 /* receipt */
@@ -370,6 +374,12 @@ const T = {
   tiltMax: 50,       // degrees of phone tilt we respond to
   slosh: 38, sloshDamp: 5.5, // springiness of the liquid surface
   tiltSlide: 1.5,    // how strongly toppings slide downhill
+  // straw suction: toppings near the opening get pulled in sideways
+  suckReach: 1.9,    // pull radius, in straw widths around the tip
+  suckPull: 170,     // how hard (px/sec at full slurp)
+  pickReach: .8,     // pickup range, in straw widths from the tip
+  // chewing by sound: short mouth noises (chomps) into the mic, not slurps
+  chewLoud: .06, chewMinMs: 30, chewMaxMs: 190, chewGapMs: 110,
   // add-ons
   // toppings always make one ~2.5-layer pile, split evenly between add-ons. "pile" on each topping = pieces for a full pile of just that topping.
   mouth: 3, pickRate: 4, travel: 0.35,
@@ -466,6 +476,21 @@ async function rpc(fn, args){
   const j = await r.json().catch(() => null);
   if (!r.ok) throw new Error((j && (j.message || j.hint)) || "Couldn't reach the shop server.");
   return j;
+}
+
+/* ============ DIAGNOSTICS: send errors to the WW backend so problems can be traced ============ */
+const SESSION_ID = Math.random().toString(36).slice(2, 12);
+function report(event, payload){
+  try { rpc("ww_log_events", { p_game: "slurp", p_session: SESSION_ID, p_name: ww ? ww.name : null, p_token: ww ? ww.token : null,
+    p_events: [{ event, payload: { ...payload, screen: typeof screen === "string" ? screen : "", ua: navigator.userAgent.slice(0, 160) } }] }).catch(() => {}); } catch(e){}
+}
+window.addEventListener("error", e => report("client_error", { msg: String(e.message).slice(0, 300), line: e.lineno, col: e.colno }));
+window.addEventListener("unhandledrejection", e => report("client_error", { msg: String(e.reason && e.reason.message || e.reason).slice(0, 300) }));
+// iPhone sometimes drops a "click"; fire on pointerup too, once per tap
+function onTap(el, fn){
+  let last = 0;
+  const go = e => { const now = Date.now(); if (now - last < 400) return; last = now; try { fn(e); } catch(err){ report("client_error", { msg: String(err.message).slice(0, 300), where: el.id }); } };
+  el.addEventListener("click", go); el.addEventListener("pointerup", go);
 }
 
 /* ============ ORDERS ============ */
@@ -569,11 +594,12 @@ function show(id){
   if (id !== screen) prevScreen = screen;
   screen = id;
   $$(".screen").forEach(s => s.classList.toggle("on", s.id === id));
-  music.onScreen(id);
-  $("#fx").classList.toggle("on", id === "splash" || id === "menu");
-  if (id === "menu") renderMenu();
-  if (id === "boards") paintBoard();
-  if (id === "punch") renderPunch();
+  const safe = f => { try { f(); } catch(e){ console.error(e); } };
+  safe(() => music.onScreen(id));
+  safe(() => $("#fx").classList.toggle("on", id === "splash" || id === "menu"));
+  if (id === "menu") safe(renderMenu);
+  if (id === "boards") safe(paintBoard);
+  if (id === "punch") safe(renderPunch);
 }
 $$("[data-go]").forEach(b => b.onclick = () => show(b.dataset.go));
 $$("[data-back]").forEach(b => b.onclick = () => show(["boards","punch"].includes(prevScreen) ? "splash" : prevScreen));
@@ -630,7 +656,7 @@ $("#surprise").onclick = () => {
 };
 let toastT = 0;
 function flashToast(msg){
-  let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "position:absolute;left:16px;right:16px;bottom:90px;background:var(--ink);color:#fff;padding:12px 14px;border-radius:14px;font-weight:800;font-size:14px;text-align:center;z-index:6;transition:opacity .2s"; $("#app").appendChild(t); }
+  let t = $("#toast"); if (!t) { t = document.createElement("div"); t.id = "toast"; t.style.cssText = "pointer-events:none;position:absolute;left:16px;right:16px;bottom:90px;background:var(--ink);color:#fff;padding:12px 14px;border-radius:14px;font-weight:800;font-size:14px;text-align:center;z-index:6;transition:opacity .2s"; $("#app").appendChild(t); }
   t.textContent = msg; t.style.opacity = 1; clearTimeout(toastT); toastT = setTimeout(() => t.style.opacity = 0, 2200);
 }
 
@@ -777,7 +803,7 @@ $("#practiceGo").onclick = () => { askTilt(); practice = true; countdown(); };
 function countdown(){
   show("count"); let n = 3; $("#countN").textContent = n;
   $("#countOrder").textContent = "Order up: " + orderName(order, true);
-  $("#countNote").textContent = "When it's ready, tap the lid to stab your straw through. Drag to steer.";
+  $("#countNote").textContent = "When it's ready, tap the lid to stab your straw through. Drag to steer." + (!practice && order.tops.some(t => !topping(t).visual) ? " Chew out loud to eat your toppings 😋" : "");
   const iv = setInterval(() => {
     n--; if (n > 0) { $("#countN").textContent = n; return; }
     clearInterval(iv); $("#countN").textContent = "🧋"; setTimeout(startRun, 350);
@@ -785,12 +811,19 @@ function countdown(){
 }
 
 /* ============ INPUT ============ */
-let slurpOnMs = 0, slurpOffMs = 0, slurpGate = false, heard = "";
+let slurpOnMs = 0, slurpOffMs = 0, slurpGate = false, heard = "", burstMs = 0, lastChewAt = 0;
 function readInput(dt){
   S.burpNow = false; S.loud = 0; S.ratio = 99;
   if (practice) { heard = holding ? "slurp" : ""; return holding ? .85 : 0; }
   const loud = clamp((readDb() - floorDb - T.gateDb) / T.rangeDb, 0, 1); // clamp = volume cap
   S.loud = loud;
+  // a chew is a short burst of sound (a chomp), much shorter than a slurp, blow or burp
+  if (loud >= T.chewLoud && !slurpGate) burstMs += dt * 1000;
+  else {
+    const now = performance.now();
+    if (burstMs >= T.chewMinMs && burstMs <= T.chewMaxMs && now - lastChewAt > T.chewGapMs && !S.clogged && !S.needBurp) { lastChewAt = now; chew(true); }
+    burstMs = 0;
+  }
   if (loud <= 0) { slurpOnMs = 0; slurpOffMs += dt * 1000; if (slurpOffMs > T.graceMs) slurpGate = false; heard = ""; return 0; }
   const s = spectrum();
   S.ratio = s.ratio;
@@ -978,8 +1011,13 @@ function step(dt){
   // ice melts into the drink
   for (const c of S.cubes) { if (c.ml <= 0) continue; const m = Math.min(c.ml, c.rate * dt); c.ml -= m; S.liquid += m; S.melted += m; }
   // toppings: anything touching the tip can ride up the straw
+  if (suck > 0 && !S.inStraw && S.mouth.length < T.mouth) { // suction drags nearby toppings toward the opening, sideways too
+    const R = G.sw * T.suckReach;
+    for (const p of S.pieces) { const dx = S.tip.x - p.x, dy = S.tip.y - p.y, d = Math.hypot(dx, dy) - p.r;
+      if (d > 0 && d < R) { const f = T.suckPull * suck * (1 - d / R) * dt / (d + p.r); p.x += dx * f; p.y += dy * f; } }
+  }
   let best = -1, bd = Infinity;
-  S.pieces.forEach((p, i) => { const d = Math.hypot(p.x - S.tip.x, p.y - S.tip.y) - p.r; if (d < G.sw / 2 + 5 && d < bd) { bd = d; best = i; } });
+  S.pieces.forEach((p, i) => { const d = Math.hypot(p.x - S.tip.x, p.y - S.tip.y) - p.r; if (d < G.sw * T.pickReach + 4 && d < bd) { bd = d; best = i; } });
   S.air = suck > 0 && S.liquid > 0 && !inLiquid && best < 0;
   const hasClogTop = S.pieces.some(p => topping(p.type).clog);
   S.risk = 0;
@@ -996,13 +1034,15 @@ function step(dt){
   if (S.liquid <= .3) S.liquid = 0;
   if (S.liquid === 0 && !S.pieces.length && !S.inStraw && !S.mouth.length) finish();
 }
-function chew(){
+function chew(fromMic){
   if (!S || S.done || !S.mouth.length) return;
   S.chews++; S.mouth[0].left--;
   if (S.mouth[0].left <= 0) { S.mouth.shift(); S.eaten++; }
   if (navigator.vibrate) navigator.vibrate(12);
+  const b = $("#chewBtn"); b.classList.remove("chomp"); void b.offsetWidth; b.classList.add("chomp");
 }
-$("#chewBtn").addEventListener("pointerdown", e => { e.preventDefault(); chew(); });
+// practice mode only: tap to chew. With the mic, players chew out loud.
+$("#chewBtn").addEventListener("pointerdown", e => { e.preventDefault(); if (practice) chew(); });
 $("#actBtn").addEventListener("pointerdown", e => { e.preventDefault(); if (!S) return; if (S.clogged) S.blowHeld = true; else if (S.needBurp) S.practiceAct = true; });
 ["pointerup","pointercancel","pointerleave"].forEach(ev => $("#actBtn").addEventListener(ev, () => { if (S) S.blowHeld = false; }));
 
@@ -1019,6 +1059,8 @@ function hud(){
   $("#mtBar").style.width = S.meter + "%"; $("#mtBar").classList.toggle("full", S.needBurp || S.frozen > 0);
   $("#mtTxt").textContent = S.needBurp ? "BURP TO KEEP DRINKING" : S.frozen > 0 ? "FROZEN " + S.frozen.toFixed(1) + "s" : "";
   const full = S.mouth.length >= T.mouth;
+  $("#chewBtn").firstChild.textContent = practice ? "Chew " : "Mouth ";
+  $("#chewBtn").classList.toggle("mic", !practice);
   $("#mouthPips").textContent = "●".repeat(S.mouth.length) + "○".repeat(T.mouth - S.mouth.length);
   $("#chewBtn").classList.toggle("full", full);
   const act = $("#actBtn"), need = practice && (S.clogged || S.needBurp);
@@ -1029,7 +1071,7 @@ function hud(){
   else if (S.frozen > 0) msg = "Brain freeze! Hold on…";
   else if (S.needBurp) msg = S.burpMs > 0 ? "Keep it going…" : practice ? "Too much air! Tap Burp" : "Too much air! Burp into the mic";
   else if (S.air) msg = "Slurping air: lower the straw";
-  else if (full && S.pieces.length) msg = "Mouth full: chew!";
+  else if (full) msg = practice ? "Mouth full: chew!" : "Mouth full: chew out loud! 😋";
   else if (practice) msg = "Hold to slurp · drag to steer";
   if (S.gasp > 0) vt = "—";
   else if (heard === "slurp") { vt = "SLURP ✓ " + Math.round(S.power * 100) + "%"; col = "var(--good)"; }
@@ -1266,14 +1308,14 @@ async function post(){
     else { paintPost(`${esc(e.message)}<br><button class="btn alt" id="retryPost" style="margin-top:8px;padding:10px">Try again</button>`); $("#retryPost").onclick = post; }
   }
 }
-$("#rcAgain").onclick = async () => {
+onTap($("#rcAgain"), async () => {
   order = normOrder(lastRun.order);
   if (practice) return countdown();
   // reuse the calibration only if the mic is still truly alive; otherwise redo the mic check
   if (micLive()) { try { if (ac.state !== "running") await ac.resume(); if (ac.state === "running" && !(await micSilent(800))) return countdown(); } catch(e){} }
   startFlow();
-};
-$("#rcNew").onclick = () => show("menu");
+});
+onTap($("#rcNew"), () => show("menu"));
 
 /* ============ LEADERBOARDS ============ */
 let boardTab = "daily";
